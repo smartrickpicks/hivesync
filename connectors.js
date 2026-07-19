@@ -6,11 +6,18 @@
 //
 // Fail-closed: every route requires ADMIN_KEY. Webhook URLs are masked in reads.
 
+const crypto = require('crypto');
 const ADMIN_KEY = process.env.ADMIN_KEY;
 
+// Constant-time key compare (audit #6) — avoids timing side-channel on the key.
+function safeEq(a, b) {
+  if (!a || !b) return false;
+  const ab = Buffer.from(String(a)), bb = Buffer.from(String(b));
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+}
 function admin(req, res, next) {
   const k = (req.headers.authorization || '').replace(/^Bearer\s+/i, '') || req.headers['x-admin-key'];
-  if (!ADMIN_KEY || k !== ADMIN_KEY) return res.status(401).json({ error: 'unauthorized' });
+  if (!safeEq(k, ADMIN_KEY)) return res.status(401).json({ error: 'unauthorized' });
   next();
 }
 const mask = (u) => (u ? u.slice(0, 34) + '…' + u.slice(-6) : null);
@@ -126,7 +133,7 @@ module.exports = (app, pool) => {
   // Agent auth = AGENT_KEY (separate credential, NOT the master ADMIN_KEY).
   function agentAuth(req, res, next) {
     const k = req.headers['x-agent-key'] || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-    if (!process.env.AGENT_KEY || k !== process.env.AGENT_KEY) return res.status(401).json({ error: 'unauthorized agent' });
+    if (!safeEq(k, process.env.AGENT_KEY)) return res.status(401).json({ error: 'unauthorized agent' });
     next();
   }
   // dashboard creates a job
@@ -173,9 +180,20 @@ module.exports = (app, pool) => {
   // human approves a drafted result → publish through the SAME delivery path
   app.post('/connectors/dispatch/:id/approve', admin, async (req, res) => {
     const { channel_key } = req.body || {};
-    const { rows } = await pool.query('select result from dispatch_jobs where id=$1', [req.params.id]);
-    const draft = rows[0] && rows[0].result && rows[0].result.output;
+    const { rows } = await pool.query('select result, status from dispatch_jobs where id=$1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'not found' });
+    if (rows[0].status === 'succeeded') return res.json({ ok: true, already: true }); // already published — no double-post
+    const draft = rows[0].result && rows[0].result.output;
     if (!channel_key || !draft) return res.status(400).json({ error: 'channel_key + a drafted result required' });
+    // atomic dedup: one publish per job id (audit #1/#2)
+    const dedup = await pool.query(
+      `insert into discord_publish_log (dedup_key, kind) values ($1,'dispatch') on conflict (dedup_key) do nothing returning dedup_key`,
+      [`dispatch:${req.params.id}`]
+    );
+    if (!dedup.rows.length) {
+      await pool.query(`update dispatch_jobs set status='succeeded', updated_at=now() where id=$1`, [req.params.id]);
+      return res.json({ ok: true, already: true });
+    }
     const out = await sendToChannel(pool, channel_key, typeof draft === 'string' ? { content: draft } : draft);
     if (!out.ok) return res.status(502).json(out);
     await pool.query(`update dispatch_jobs set status='succeeded', updated_at=now() where id=$1`, [req.params.id]);
@@ -195,6 +213,7 @@ module.exports = (app, pool) => {
       );
       for (const p of rows) {
         const out = await sendToChannel(pool, p.channel_key, p.payload);
+        if (!out.ok) console.error('[connectors] scheduled post failed', p.id, out.error); // not silent (audit #3)
         await pool.query('update scheduled_posts set last_run=now() where id=$1', [p.id]);
         if (out.ok && !p.repeat) await pool.query('update scheduled_posts set enabled=false where id=$1', [p.id]);
       }
