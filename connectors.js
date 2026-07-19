@@ -49,9 +49,15 @@ async function sendToChannel(pool, guild_id, channel_key, payload, opts = {}) {
   // Security: never ping by default. Operator must opt in explicitly (e.g. {parse:['roles']}).
   // Stops composed/agent-drafted content from injecting @everyone / mass mentions.
   body.allowed_mentions = payload.allowed_mentions || { parse: [] };
-  const r = await fetch(rows[0].webhook_url, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-  });
+  let r;
+  try {
+    r = await fetch(rows[0].webhook_url, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+  } catch (e) {
+    // A DNS/TLS/network throw must not crash the process (it now serves every guild).
+    return { ok: false, error: `discord fetch: ${e.message}` };
+  }
   if (!r.ok) return { ok: false, error: `discord ${r.status}` };
   // Audit trail — one row per successful send. logKey lets a caller reuse its
   // pre-send dedup key (on-conflict no-op); otherwise generate a unique one.
@@ -228,9 +234,19 @@ module.exports = (app, pool) => {
       await pool.query(`update dispatch_jobs set status='succeeded', updated_at=now() where id=$1`, [req.params.id]);
       return res.json({ ok: true, already: true });
     }
+    // Whitelist only render fields out of the agent-authored draft — never let a
+    // drafted result set allowed_mentions and defeat the @everyone lock (audit #4).
+    const payload = typeof draft === 'string'
+      ? { content: draft }
+      : { content: draft.content, embed: draft.embed, embeds: draft.embeds };
     // reuse the dedup key as the send logKey so sendToChannel's audit insert is a no-op, not a second row
-    const out = await sendToChannel(pool, g, channel_key, typeof draft === 'string' ? { content: draft } : draft, { logKey: dedupKey, kind: 'dispatch' });
-    if (!out.ok) return res.status(502).json(out);
+    const out = await sendToChannel(pool, g, channel_key, payload, { logKey: dedupKey, kind: 'dispatch' });
+    if (!out.ok) {
+      // Release the guard row so a retry can actually deliver — otherwise a failed
+      // send poisons the key and the job is falsely marked delivered (audit #1).
+      await pool.query(`delete from discord_publish_log where dedup_key=$1`, [dedupKey]);
+      return res.status(502).json(out);
+    }
     await pool.query(`update dispatch_jobs set status='succeeded', updated_at=now() where id=$1`, [req.params.id]);
     res.json({ ok: true });
   });
