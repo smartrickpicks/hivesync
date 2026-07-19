@@ -25,6 +25,9 @@ async function sendToChannel(pool, channel_key, payload) {
   if (payload.content) body.content = String(payload.content).slice(0, 2000);
   if (payload.embed) body.embeds = [payload.embed];
   if (payload.embeds) body.embeds = payload.embeds;
+  // Security: never ping by default. Operator must opt in explicitly (e.g. {parse:['roles']}).
+  // Stops composed/agent-drafted content from injecting @everyone / mass mentions.
+  body.allowed_mentions = payload.allowed_mentions || { parse: [] };
   const r = await fetch(rows[0].webhook_url, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
