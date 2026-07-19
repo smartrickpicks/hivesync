@@ -187,6 +187,16 @@ module.exports = (app, pool) => {
     const { rows } = await pool.query('select id,guild_id,capability,status,error,created_by,created_at,updated_at from dispatch_jobs where guild_id=$1 order by created_at desc limit 100', [guildOf(req)]);
     res.json(rows);
   });
+  // single job WITH its draft result — the dashboard fetches this to show an
+  // awaiting_approval draft to the operator before they approve it.
+  app.get('/connectors/dispatch/:id', admin, async (req, res) => {
+    const { rows } = await pool.query(
+      'select id,guild_id,capability,payload,status,result,error,created_by,created_at,updated_at from dispatch_jobs where id=$1 and guild_id=$2',
+      [req.params.id, guildOf(req)]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'not found' });
+    res.json(rows[0]);
+  });
   // agent leases ONE queued job atomically (skip-locked). The operator's agent is
   // guild-agnostic; the job carries its own guild_id downstream.
   app.post('/connectors/dispatch/claim', agentAuth, async (req, res) => {
