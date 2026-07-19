@@ -1218,6 +1218,9 @@ app.get('/payment/poll', async (req, res) => {
 });
 
 
+// Discord connector backend (deterministic; channels, embed send, sources, scheduled).
+require('./connectors')(app, pool);
+
 app.listen(port, () => {
   console.log(`[Hivesync] Server running on port ${port}`);
   console.log(`[Hivesync] POST /api/messages — Ingest & classify`);
