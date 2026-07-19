@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmed — Hivesync</title>
+    <link rel="stylesheet" href="/otto-brand.css">
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=__GA4_MEASUREMENT_ID__"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '__GA4_MEASUREMENT_ID__');
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --amber: #F59E0B;
+            --amber-light: #FCD34D;
+            --amber-dark: #D97706;
+            --dark: #0C0A09;
+            --dark-card: #1C1917;
+            --dark-border: #292524;
+            --stone-400: #A8A29E;
+            --stone-300: #D6D3D1;
+            --white: #FAFAF9;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--base);
+            color: var(--stone-300);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: var(--font-sans);
+            color: var(--white);
+        }
+
+        .hex-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(245, 158, 11, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(245, 158, 11, 0.04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        nav {
+            padding: 28px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: var(--font-sans);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--white);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-hex {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--amber), var(--amber-dark));
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-hex-inner {
+            width: 26px;
+            height: 26px;
+            background: var(--dark);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+
+        .nav-tag {
+            font-size: 0.75rem;
+            color: var(--amber);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            padding: 4px 12px;
+            border-radius: 100px;
+            font-weight: 500;
+        }
+
+        .success-page {
+            min-height: calc(100vh - 180px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 0;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(34, 197, 94, 0.12);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 28px;
+            font-size: 2.4rem;
+        }
+
+        .success-page h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .success-page h1 span {
+            background: linear-gradient(135deg, var(--amber-light), var(--amber-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .success-sub {
+            font-size: 1.1rem;
+            color: var(--stone-400);
+            max-width: 460px;
+            line-height: 1.7;
+            margin-bottom: 36px;
+        }
+
+        .dashboard-btn {
+            display: inline-block;
+            padding: 14px 36px;
+            background: linear-gradient(135deg, var(--amber), var(--amber-dark));
+            color: var(--dark);
+            font-family: var(--font-sans);
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            border-radius: 12px;
+            transition: opacity 0.2s;
+        }
+
+        .dashboard-btn:hover {
+            opacity: 0.9;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(245, 158, 11, 0.2);
+            border-top-color: var(--amber);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .verifying-msg {
+            font-size: 0.9rem;
+            color: var(--stone-400);
+            margin-top: 8px;
+        }
+
+        .error-msg {
+            display: none;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #EF4444;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            max-width: 400px;
+            margin-top: 20px;
+        }
+
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--dark-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        footer span {
+            font-size: 0.85rem;
+            color: var(--stone-400);
+        }
+
+        .footer-built {
+            font-size: 0.8rem;
+            color: var(--stone-400);
+        }
+
+        .footer-built a {
+            color: var(--amber);
+            text-decoration: none;
+        }
+
+        @media (max-width: 768px) {
+            footer {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hex-bg"></div>
+
+    <div class="container">
+        <nav>
+            <a class="logo" href="/">
+                <div class="logo-hex"><div class="logo-hex-inner"></div></div>
+                Hivesync
+            </a>
+            <span class="nav-tag">AI Community Ops</span>
+        </nav>
+
+        <div class="success-page">
+            <!-- Loading state (shown by default) -->
+            <div id="state-loading">
+                <div class="spinner"></div>
+                <p class="verifying-msg">Verifying your payment...</p>
+            </div>
+
+            <!-- Success state (hidden until verified) -->
+            <div id="state-success" style="display:none;">
+                <div class="success-icon">&#x2713;</div>
+                <h1>You're <span>in</span></h1>
+                <p class="success-sub" id="success-text">Your payment is confirmed. Access your dashboard below.</p>
+                <a href="/dashboard" class="dashboard-btn">Go to Dashboard</a>
+            </div>
+
+            <!-- Error state (hidden until verification fails) -->
+            <div id="state-error" style="display:none;">
+                <div class="error-msg">
+                    Payment verification timed out. If you were charged, contact <a href="mailto:support@hivesync.com" style="color:#F59E0B;">support@hivesync.com</a>.
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <span>&copy; 2026 Hivesync</span>
+            <span class="footer-built">Built autonomously by <a href="https://polsia.com" target="_blank">Polsia</a></span>
+            <span class="otto-sig">built by otto · 2026-07-06</span>
+        </footer>
+    </div>
+
+    <script>
+    (function() {
+        var sessionId = new URLSearchParams(window.location.search).get('session_id')
+            || new URLSearchParams(window.location.search).get('checkout_session_id');
+
+        if (!sessionId) {
+            document.getElementById('state-loading').style.display = 'none';
+            document.getElementById('state-success').style.display = 'block';
+            document.querySelector('.success-page h1').innerHTML = 'Payment <span>confirmed</span>';
+            document.getElementById('success-text').textContent = 'Your access is ready. Go to your dashboard below.';
+            return;
+        }
+
+        var attempts = 0;
+        var maxAttempts = 10;
+
+        function poll() {
+            fetch('/payment/poll?session_id=' + encodeURIComponent(sessionId))
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.verified) {
+                        document.getElementById('state-loading').style.display = 'none';
+                        document.getElementById('state-success').style.display = 'block';
+                        if (data.email) {
+                            document.getElementById('success-text').textContent =
+                                'Payment confirmed for ' + data.email + '. Access your dashboard below.';
+                        }
+                    } else {
+                        attempts++;
+                        if (attempts < maxAttempts) {
+                            setTimeout(poll, 1500);
+                        } else {
+                            document.getElementById('state-loading').style.display = 'none';
+                            document.getElementById('state-error').style.display = 'block';
+                        }
+                    }
+                })
+                .catch(function() {
+                    attempts++;
+                    if (attempts < maxAttempts) {
+                        setTimeout(poll, 1500);
+                    } else {
+                        document.getElementById('state-loading').style.display = 'none';
+                        document.getElementById('state-error').style.display = 'block';
+                    }
+                });
+        }
+
+        poll();
+    })();
+    </script>
+</body>
+</html>

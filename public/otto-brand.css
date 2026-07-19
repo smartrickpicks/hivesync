@@ -1,0 +1,116 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@300..700&display=swap');
+
+:root {
+  /* Core brand */
+  --otto: #7C5CFC;
+  --otto-hover: #6B4AEB;
+  --otto-glow: rgba(124, 92, 252, 0.3);
+  --accent: #00D1FF;
+  --accent-glow: rgba(0, 209, 255, 0.3);
+
+  /* Chambers */
+  --discover: #EF4444;
+  --build: #EAB308;
+  --review: #A855F7;
+  --ship: #22C55E;
+
+  /* Surfaces */
+  --base: #0B0E14;
+  --raised: #0F1219;
+  --overlay: #151923;
+  --sunken: #080A0F;
+  --border: #1E2330;
+
+  /* Text */
+  --text: #E2E8F0;
+  --text2: #94A3B8;
+  --text3: #64748B;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  --shadow-xl: 0 16px 48px rgba(0,0,0,0.5);
+  --shadow-otto: 0 0 24px rgba(124, 92, 252, 0.4);
+
+  /* Motion */
+  --ease-default: all 0.2s ease;
+  --ease-reveal: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-constellation: all 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* Fonts */
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+html, body, * {
+  font-family: var(--font-sans);
+}
+
+body {
+  background: var(--base);
+  color: var(--text);
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
+}
+
+/* Type scale */
+.t-display  { font-size: 32px; font-weight: 800; }
+.t-h1       { font-size: 24px; font-weight: 700; }
+.t-h2       { font-size: 18px; font-weight: 700; }
+.t-h3       { font-size: 15px; font-weight: 600; }
+.t-body     { font-size: 14px; font-weight: 500; }
+.t-body-sm  { font-size: 13px; font-weight: 400; }
+.t-caption  { font-size: 12px; font-weight: 400; }
+
+.t-ui-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.t-section-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.t-micro {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.t-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+}
+
+/* Gradient text utility */
+.text-gradient {
+  background: linear-gradient(135deg, #E2E8F0, #7C5CFC);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Footer signature */
+.otto-sig {
+  font-family: var(--font-mono);
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 400;
+}

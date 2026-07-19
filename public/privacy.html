@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — Otto</title>
+    <meta name="description" content="Otto privacy policy — what we collect, how we use it, cookies, retention, and your rights under GDPR/CCPA.">
+    <link rel="canonical" href="https://orbitwithotto.com/privacy">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://orbitwithotto.com/privacy">
+    <meta property="og:title" content="Privacy Policy — Otto">
+    <meta property="og:description" content="Otto privacy policy — what we collect, how we use it, cookies, retention, and your rights under GDPR/CCPA.">
+    <meta property="og:image" content="https://otto.polsia.app/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="/otto-brand.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Layout */
+        .layout { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px; flex-shrink: 0;
+            background: var(--raised); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            padding: 24px 0; position: sticky; top: 0; height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            display: flex; align-items: center; gap: 10px;
+            padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+        }
+        .sidebar-logo-mark { font-family: var(--font-sans); font-size: 20px; font-weight: 800; color: var(--otto); }
+        .sidebar-logo-word { display: block; font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--text); }
+        .sidebar-logo-caption { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+
+        .sidebar-nav { display: flex; flex-direction: column; padding: 0 12px; gap: 2px; }
+
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: var(--radius-sm);
+            font-size: 13px; font-weight: 500; color: var(--text2);
+            text-decoration: none; cursor: pointer;
+            transition: var(--ease-default);
+            border-left: 2px solid transparent;
+            background: none; border-right: none; border-top: none; border-bottom: none;
+            border-left: 2px solid transparent;
+            text-align: left; width: 100%;
+        }
+        .sidebar-item:hover { color: var(--text); background: rgba(124,92,252,0.06); }
+        .sidebar-item.active {
+            color: var(--text); border-left-color: var(--otto);
+            background: rgba(124,92,252,0.08);
+        }
+        .sidebar-item-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+        .sidebar-section-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text3);
+            padding: 16px 24px 8px;
+        }
+        .sidebar-fn { opacity: 0.5; pointer-events: none; }
+
+        /* Main content */
+        .main-content { flex: 1; min-width: 0; padding: 32px 24px; }
+
+        .page-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .page-header h1 { font-size: 1.8rem; color: var(--text); }
+        .page-header .subtitle { color: var(--text3); font-size: 0.95rem; margin-top: 4px; }
+
+        /* Policy content */
+        .policy-content { max-width: 760px; }
+        .policy-section { margin-bottom: 36px; }
+        .policy-section h2 { color: var(--text); margin-bottom: 12px; }
+        .policy-section p,
+        .policy-section li {
+            color: var(--text2);
+            font-size: 0.95rem;
+            line-height: 1.65;
+            margin-bottom: 10px;
+        }
+        .policy-section ul { padding-left: 22px; margin-bottom: 10px; }
+        .policy-section ul li { margin-bottom: 6px; }
+        .policy-section a { color: var(--otto); text-decoration: none; }
+        .policy-section a:hover { color: var(--otto-hover); text-decoration: underline; }
+        .policy-section strong { color: var(--text); font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <nav class="sidebar">
+            <div class="sidebar-logo">
+                <span class="sidebar-logo-mark">O</span>
+                <div>
+                    <span class="sidebar-logo-word">Otto</span>
+                    <span class="sidebar-logo-caption">Command Center</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-item" href="/dashboard"><span class="sidebar-item-dot" style="background:var(--text3)"></span>Overview</a>
+                <a class="sidebar-item" href="/dashboard"><span class="sidebar-item-dot" style="background:var(--text3)"></span>Settings</a>
+            </nav>
+            <div class="sidebar-section-label">Functions</div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--discover)"></span>Scout</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--build)"></span>Forge</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--review)"></span>Sentinel</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--ship)"></span>Relay</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--otto)"></span>Pulse</a>
+            </nav>
+        </nav>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Privacy Policy</h1>
+                    <p class="subtitle">Last updated: 2026-07-10</p>
+                </div>
+            </div>
+
+            <div class="policy-content">
+                <div class="policy-section">
+                    <h2 class="t-h1">Who we are</h2>
+                    <p>Otto is operated by <strong>Airlock Labs</strong> ("we," "us," or "our"). We build autonomous AI agents for community management. You can reach us about anything in this policy at <a href="mailto:privacy@orbitwithotto.com">privacy@orbitwithotto.com</a>.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Information we collect</h2>
+                    <p>We collect the minimum information needed to operate Otto and measure how the marketing site is performing. Specifically:</p>
+                    <ul>
+                        <li><strong>Waitlist signups.</strong> When you submit the "Get early access" form on our landing page, we collect the fields you provide: email address (required), name (optional), platform (optional), community size (optional), and referral source.</li>
+                        <li><strong>Google Analytics 4</strong> on our marketing pages (<code>/</code> and <code>/otto</code>). GA4 sets cookies and collects: truncated IP address, device and browser metadata (user agent, screen resolution, language), pages viewed, CTA clicks (e.g. "Start Free", "Join the Waitlist"), and the waitlist submission event.</li>
+                        <li><strong>Polsia analytics beacon.</strong> A small pixel that sets a pseudonymous visitor identifier (<code>polsia_vid</code>) in your browser's <code>localStorage</code> and fires a single page-view event. No per-user PII is attached to the beacon payload.</li>
+                    </ul>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">How we use information</h2>
+                    <ul>
+                        <li>To operate the waitlist and onboard communities in the order they signed up.</li>
+                        <li>To send confirmation and onboarding emails (delivered via our email provider; we do not sell or rent your email).</li>
+                        <li>To measure aggregate landing-page traffic and CTA performance so we can improve the site.</li>
+                        <li>To respond to support requests and rights requests you send us.</li>
+                    </ul>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Cookies &amp; local storage</h2>
+                    <ul>
+                        <li><strong>Google Analytics 4</strong> sets the <code>_ga</code> and <code>_ga_*</code> cookies used to distinguish unique visitors and sessions.</li>
+                        <li><strong>Polsia</strong> sets the <code>polsia_vid</code> key in your browser's <code>localStorage</code> (not a cookie).</li>
+                    </ul>
+                    <p>The policy pages themselves do not set analytics cookies or fire tracking beacons.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Retention</h2>
+                    <ul>
+                        <li><strong>Waitlist rows</strong> are kept until you ask us to remove them, or until your account is onboarded and migrated into the active Otto service.</li>
+                        <li><strong>GA4 data</strong> is retained per Google's default 14-month retention window.</li>
+                        <li><strong>Polsia beacon events</strong> are aggregated for traffic measurement and are not retained in a per-user identifiable form beyond the pseudonym in your own browser.</li>
+                    </ul>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Sharing</h2>
+                    <p>We share information only with the processors needed to run Otto:</p>
+                    <ul>
+                        <li><strong>Google</strong> — as the operator of Google Analytics 4 for traffic measurement.</li>
+                        <li><strong>Polsia</strong> — as the operator of the analytics beacon and our email-sending infrastructure.</li>
+                        <li><strong>Stripe</strong> — only if and when you choose to pay for a paid Otto plan. No payment data is collected on the marketing site today.</li>
+                    </ul>
+                    <p>We do not sell personal information, and we do not share it with advertising networks.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Your rights (GDPR / CCPA)</h2>
+                    <p>If you are in the European Economic Area, the United Kingdom, or California, you have the right to:</p>
+                    <ul>
+                        <li><strong>Right to access</strong> the personal information we hold about you.</li>
+                        <li><strong>Right to delete</strong> the personal information we hold about you.</li>
+                        <li><strong>Right to correct</strong> inaccurate personal information.</li>
+                        <li><strong>Right to opt out</strong> of any sale or sharing of personal information (we do not sell or share for cross-context advertising).</li>
+                        <li><strong>Right to data portability</strong> for information you have provided to us.</li>
+                    </ul>
+                    <p>To exercise any of these rights, email <a href="mailto:privacy@orbitwithotto.com">privacy@orbitwithotto.com</a>. We respond within 30 days.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">How to opt out of GA4</h2>
+                    <p>You can opt out of Google Analytics 4 tracking across all websites by installing the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">Google Analytics Opt-out Browser Add-on</a>. Most modern browsers also honor a "Do Not Track" or "Global Privacy Control" signal; we respect those where technically feasible.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Changes to this policy</h2>
+                    <p>If we make material changes to this policy, we will update the "Last updated" date above and, where appropriate, notify active waitlist members by email.</p>
+                </div>
+            </div>
+
+            <footer style="padding: 24px 0; border-top: 1px solid var(--border); margin-top: 32px;">
+                <span class="otto-sig">built by otto · 2026-07-10</span>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>

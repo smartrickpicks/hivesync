@@ -1,0 +1,4 @@
+[[crons]]
+name     = "weekly-ga4-report"
+schedule = "0 8 * * 1"   # Every Monday 08:00 UTC
+command  = "node jobs/weekly-ga4-report.js"

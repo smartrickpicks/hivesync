@@ -1,0 +1,1861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hivesync — Your Dashboard</title>
+    <link rel="stylesheet" href="/otto-brand.css">
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=__GA4_MEASUREMENT_ID__"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '__GA4_MEASUREMENT_ID__');
+    </script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Layout */
+        .layout { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px; flex-shrink: 0;
+            background: var(--raised); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            padding: 24px 0; position: sticky; top: 0; height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            display: flex; align-items: center; gap: 10px;
+            padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+        }
+        .sidebar-logo-mark { font-family: var(--font-sans); font-size: 20px; font-weight: 800; color: var(--otto); }
+        .sidebar-logo-word { display: block; font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--text); }
+        .sidebar-logo-caption { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+
+        .sidebar-nav { display: flex; flex-direction: column; padding: 0 12px; gap: 2px; }
+
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: var(--radius-sm);
+            font-size: 13px; font-weight: 500; color: var(--text2);
+            text-decoration: none; cursor: pointer;
+            transition: var(--ease-default);
+            border-left: 2px solid transparent;
+            background: none; border-right: none; border-top: none; border-bottom: none;
+            border-left: 2px solid transparent;
+            text-align: left; width: 100%;
+        }
+        .sidebar-item:hover { color: var(--text); background: rgba(124,92,252,0.06); }
+        .sidebar-item.active {
+            color: var(--text); border-left-color: var(--otto);
+            background: rgba(124,92,252,0.08);
+        }
+        .sidebar-item-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+        .sidebar-section-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text3);
+            padding: 16px 24px 8px;
+        }
+        .sidebar-fn { opacity: 0.5; pointer-events: none; }
+
+        .sidebar-pill {
+            margin-left: auto;
+            font-family: var(--font-mono);
+            font-size: 10px; font-weight: 700;
+            padding: 3px 8px; border-radius: 9999px;
+            background: rgba(124,92,252,0.1); color: var(--otto);
+            letter-spacing: 0.5px; flex-shrink: 0;
+            position: relative;
+            visibility: hidden;
+        }
+        .sidebar-pill.ready { visibility: visible; }
+        .sidebar-pill.connected { background: rgba(34,197,94,0.12); color: var(--ship); }
+        .sidebar-pill.empty { background: rgba(100,116,139,0.12); color: var(--text3); }
+        .sidebar-pill[data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute; left: 12px; top: calc(100% + 4px);
+            background: var(--raised); color: var(--text);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 6px 10px; font-family: var(--font-sans);
+            font-size: 0.78rem; font-weight: 500; letter-spacing: 0;
+            white-space: nowrap; z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+
+        /* Main content */
+        .main-content { flex: 1; min-width: 0; padding: 32px 24px; }
+
+        .page-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .page-header h1 { font-size: 1.8rem; color: var(--text); }
+        .page-header .subtitle { color: var(--text3); font-size: 0.95rem; margin-top: 4px; }
+
+        /* Tab content */
+        .tab-content { display: block; }
+        .tab-content.hidden { display: none; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 16px; margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--raised); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 20px;
+            transition: var(--ease-default);
+        }
+        .stat-card:hover {
+            border-color: rgba(124,92,252,0.3);
+            box-shadow: 0 0 20px rgba(124,92,252,0.05);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
+        }
+        .stat-value { font-family: var(--font-sans); font-size: 2rem; font-weight: 700; color: var(--text); }
+        .stat-sub { font-size: 0.8rem; color: var(--text3); margin-top: 4px; }
+
+        /* Main Grid */
+        .main-grid { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+
+        /* Section Card */
+        .section-card {
+            background: var(--raised); border: 1px solid var(--border);
+            border-radius: var(--radius-md); overflow: hidden;
+            transition: var(--ease-default);
+        }
+        .section-card:hover { border-color: rgba(124,92,252,0.3); box-shadow: 0 0 20px rgba(124,92,252,0.05); }
+
+        .section-header {
+            padding: 20px 24px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .section-header h3 { font-size: 1rem; color: var(--text); }
+
+        /* Badge */
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1px;
+            padding: 4px 10px; border-radius: 4px;
+        }
+        .badge-otto { color: var(--otto); background: rgba(124,92,252,0.1); }
+
+        /* Message List */
+        .message-list { max-height: 500px; overflow-y: auto; }
+        .message-list::-webkit-scrollbar { width: 4px; }
+        .message-list::-webkit-scrollbar-track { background: transparent; }
+        .message-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+        .message-item {
+            padding: 20px 24px; border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+        .message-item:hover { background: rgba(124,92,252,0.04); }
+
+        .message-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .message-author { font-weight: 500; color: var(--text); font-size: 0.9rem; }
+        .message-channel {
+            font-size: 0.75rem; color: var(--text2);
+            background: var(--raised); padding: 2px 8px; border-radius: 4px;
+            font-family: var(--font-mono);
+        }
+        .message-time { font-size: 0.75rem; color: var(--text3); margin-left: auto; }
+        .message-content { font-size: 0.9rem; color: var(--text2); margin-bottom: 10px; line-height: 1.5; }
+        .message-tags { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        /* Tags — pill shape */
+        .tag {
+            display: inline-flex; align-items: center;
+            font-size: 12px; font-weight: 500;
+            padding: 5px 10px; border-radius: 9999px;
+        }
+        .tag-question        { background: rgba(0,209,255,0.1);   color: var(--accent);   border: 1px solid rgba(0,209,255,0.2); }
+        .tag-feedback        { background: rgba(168,85,247,0.1);  color: var(--review);   border: 1px solid rgba(168,85,247,0.2); }
+        .tag-introduction    { background: rgba(34,197,94,0.1);   color: var(--ship);     border: 1px solid rgba(34,197,94,0.2); }
+        .tag-support_request { background: rgba(239,68,68,0.1);   color: var(--discover); border: 1px solid rgba(239,68,68,0.2); }
+        .tag-discussion      { background: rgba(124,92,252,0.12); color: var(--otto);     border: 1px solid rgba(124,92,252,0.2); }
+        .tag-spam            { background: rgba(100,116,139,0.1); color: var(--text3);    border: 1px solid rgba(100,116,139,0.15); }
+        .tag-positive        { background: rgba(34,197,94,0.1);   color: var(--ship);     border: 1px solid rgba(34,197,94,0.2); }
+        .tag-neutral         { background: rgba(100,116,139,0.08);color: var(--text3);    border: 1px solid rgba(100,116,139,0.12); }
+        .tag-negative        { background: rgba(239,68,68,0.1);   color: var(--discover); border: 1px solid rgba(239,68,68,0.2); }
+
+        /* AI Response */
+        .ai-response {
+            margin-top: 12px; padding: 12px 16px;
+            background: rgba(124,92,252,0.05);
+            border-left: 2px solid var(--otto);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85rem; color: var(--text2); line-height: 1.5;
+        }
+        .ai-response-label {
+            font-size: 0.7rem; color: var(--otto); font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
+            font-family: var(--font-sans);
+        }
+        .response-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+        .action-btn {
+            font-family: var(--font-sans); font-weight: 600; font-size: 12px;
+            padding: 8px 14px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); cursor: pointer;
+            transition: var(--ease-default);
+            background: transparent; color: var(--text2);
+        }
+        .action-btn:hover { border-color: var(--otto); color: var(--otto); }
+        .action-btn.approve { border-color: rgba(34,197,94,0.3); color: var(--ship); }
+        .action-btn.approve:hover { background: rgba(34,197,94,0.1); }
+        .action-btn.reject { background: rgba(239,68,68,0.12); color: var(--discover); border: 1px solid rgba(239,68,68,0.25); }
+        .action-btn.reject:hover { background: rgba(239,68,68,0.18); }
+
+        /* Right sidebar stack */
+        .sidebar-stack { display: flex; flex-direction: column; gap: 20px; }
+
+        /* Setup Card */
+        .setup-card {
+            background: var(--raised); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 24px;
+            transition: var(--ease-default);
+        }
+        .setup-card:hover { border-color: rgba(124,92,252,0.3); box-shadow: 0 0 20px rgba(124,92,252,0.05); }
+        .setup-card h3 { font-size: 1rem; margin-bottom: 6px; color: var(--text); }
+        .setup-card p { font-size: 0.85rem; color: var(--text3); margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 0.78rem; color: var(--text3);
+            margin-bottom: 6px; text-transform: uppercase;
+            letter-spacing: 0.05em; font-family: var(--font-mono);
+        }
+        .form-group input {
+            font-family: var(--font-sans); font-size: 13px; color: var(--text);
+            background: var(--sunken); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 10px 14px;
+            transition: var(--ease-default); outline: none; width: 100%;
+        }
+        .form-group input:focus { border-color: var(--otto); box-shadow: 0 0 0 3px var(--otto-glow); }
+        .form-group input::placeholder { color: var(--text3); }
+
+        .primary-btn {
+            width: 100%;
+            font-family: var(--font-sans); font-weight: 600; font-size: 13px;
+            padding: 10px 20px; border-radius: var(--radius-sm);
+            border: none; cursor: pointer; transition: var(--ease-default);
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--otto); color: #fff;
+        }
+        .primary-btn:hover { background: var(--otto-hover); box-shadow: 0 0 20px var(--otto-glow); }
+        .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .inline-error { color: var(--discover); font-size: 0.82rem; margin-top: 8px; }
+
+        /* Success State */
+        .success-state { text-align: center; padding: 24px 16px; }
+        .success-state .icon { font-size: 2rem; margin-bottom: 12px; }
+        .success-state h3 { font-size: 1rem; margin-bottom: 6px; color: var(--text); }
+        .success-state p { font-size: 0.85rem; color: var(--text3); margin-bottom: 16px; }
+
+        .webhook-box {
+            background: var(--sunken); border: 1px solid var(--border);
+            border-radius: 8px; padding: 12px;
+            font-family: var(--font-mono); font-size: 0.75rem;
+            color: var(--otto); word-break: break-all; margin-bottom: 12px;
+        }
+
+        .copy-btn {
+            background: rgba(124,92,252,0.1); border: 1px solid rgba(124,92,252,0.2);
+            border-radius: var(--radius-sm); color: var(--otto);
+            padding: 8px 16px; font-size: 13px; font-weight: 600;
+            font-family: var(--font-sans); cursor: pointer; transition: var(--ease-default);
+        }
+        .copy-btn:hover { background: rgba(124,92,252,0.15); }
+
+        /* Community Info Card */
+        .community-info {
+            background: var(--raised); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 20px 24px;
+            transition: var(--ease-default);
+        }
+
+        .community-name {
+            font-family: var(--font-sans); font-size: 1.2rem; font-weight: 600;
+            color: var(--text); margin-bottom: 4px;
+        }
+        .community-meta { font-size: 0.82rem; color: var(--text3); margin-bottom: 16px; }
+
+        .info-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+        }
+        .info-row:last-child { border-bottom: none; }
+
+        .info-label {
+            font-size: 0.78rem; color: var(--text3);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            font-family: var(--font-mono);
+        }
+        .info-value {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text2);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .info-value .masked { color: var(--text3); }
+
+        .reveal-btn {
+            background: none; border: none; color: var(--text3);
+            cursor: pointer; font-size: 0.75rem;
+            padding: 2px 6px; border-radius: 4px; transition: color 0.2s;
+        }
+        .reveal-btn:hover { color: var(--otto); }
+
+        /* Empty State */
+        .empty-state { padding: 60px 24px; text-align: center; }
+        .empty-state .icon { font-size: 2.5rem; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 1.1rem; margin-bottom: 8px; color: var(--text); }
+        .empty-state p { color: var(--text3); font-size: 0.9rem; max-width: 320px; margin: 0 auto 24px; }
+
+        /* Loading */
+        .loading {
+            display: flex; align-items: center; justify-content: center;
+            padding: 40px; color: var(--text3); gap: 10px;
+        }
+        .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid var(--border); border-top-color: var(--otto);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+        #health-card { }
+        #health-chart { min-height: 64px; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .layout { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; padding: 12px 16px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .main-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .main-content { padding: 20px 16px; }
+        }
+
+        /* Tour */
+        .tour-backdrop {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 9998; display: none;
+        }
+        .tour-spotlight {
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+        }
+        .tour-tooltip {
+            position: fixed; z-index: 9999; width: 280px;
+            background: var(--raised); border: 1px solid var(--border);
+            border-left: 3px solid var(--otto);
+            border-radius: var(--radius-md); padding: 20px;
+            box-shadow: var(--shadow-otto);
+            animation: tour-pop 0.2s ease-out;
+        }
+        @keyframes tour-pop {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .tour-step-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            color: var(--otto); margin-bottom: 8px;
+        }
+        .tour-title {
+            font-family: var(--font-sans); font-size: 1rem; font-weight: 700;
+            color: var(--text); margin-bottom: 8px;
+        }
+        .tour-body {
+            font-family: var(--font-sans); font-size: 0.85rem;
+            color: var(--text2); line-height: 1.5; margin-bottom: 16px;
+        }
+        .tour-nav {
+            display: flex; gap: 6px; margin-bottom: 16px;
+        }
+        .tour-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--border); cursor: pointer;
+            transition: background 0.2s;
+        }
+        .tour-dot.active { background: var(--otto); }
+        .tour-actions {
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .tour-skip {
+            background: none; border: none; cursor: pointer;
+            font-family: var(--font-sans); font-size: 0.82rem; color: var(--text3);
+            padding: 0;
+        }
+        .tour-skip:hover { color: var(--text); }
+
+        /* Scout integration card */
+        .scout-status { display: inline-flex; align-items: center; gap: 6px; }
+        .scout-status .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--text3); flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .scout-status.connected .status-dot { background: var(--ship); }
+        .scout-status-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text3);
+        }
+        .scout-status.connected .scout-status-label { color: var(--ship); }
+        .scout-meta-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+        }
+        .scout-meta-row:last-child { border-bottom: none; }
+        .scout-meta-row .info-label {
+            font-size: 0.78rem; color: var(--text3);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            font-family: var(--font-mono);
+        }
+        .scout-success-icon { font-size: 2rem; margin-bottom: 12px; line-height: 1; }
+
+        /* Forge integration card */
+        .forge-status { display: inline-flex; align-items: center; gap: 6px; }
+        .forge-status .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--text3); flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .forge-status.connected .status-dot { background: var(--ship); }
+        .forge-status-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text3);
+        }
+        .forge-status.connected .forge-status-label { color: var(--ship); }
+        .forge-meta-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+        }
+        .forge-meta-row:last-child { border-bottom: none; }
+        .forge-meta-row .info-label {
+            font-size: 0.78rem; color: var(--text3);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            font-family: var(--font-mono);
+        }
+        .forge-success-icon { font-size: 2rem; margin-bottom: 12px; line-height: 1; }
+
+        /* Pulse integration card */
+        .pulse-status { display: inline-flex; align-items: center; gap: 6px; }
+        .pulse-status .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--text3); flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .pulse-status.connected .status-dot { background: var(--ship); }
+        .pulse-status-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text3);
+        }
+        .pulse-status.connected .pulse-status-label { color: var(--ship); }
+        .pulse-meta-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+        }
+        .pulse-meta-row:last-child { border-bottom: none; }
+        .pulse-meta-row .info-label {
+            font-size: 0.78rem; color: var(--text3);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            font-family: var(--font-mono);
+        }
+        .pulse-success-icon { font-size: 2rem; margin-bottom: 12px; line-height: 1; }
+
+        /* Relay integration card */
+        .relay-status { display: inline-flex; align-items: center; gap: 6px; }
+        .relay-status .status-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--text3); flex-shrink: 0;
+            transition: background 0.2s;
+        }
+        .relay-status.connected .status-dot { background: var(--ship); }
+        .relay-status-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text3);
+        }
+        .relay-status.connected .relay-status-label { color: var(--ship); }
+        .relay-meta-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+        }
+        .relay-meta-row:last-child { border-bottom: none; }
+        .relay-meta-row .info-label {
+            font-size: 0.78rem; color: var(--text3);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            font-family: var(--font-mono);
+        }
+        .relay-success-icon { font-size: 2rem; margin-bottom: 12px; line-height: 1; }
+
+        /* Onboarding checklist */
+        .onboarding-progress {
+            height: 4px; background: var(--border); border-radius: 2px;
+            overflow: hidden; margin-bottom: 14px;
+        }
+        .onboarding-progress-fill {
+            height: 100%; background: var(--otto); border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        .onboarding-list { display: flex; flex-direction: column; gap: 2px; }
+        .onboarding-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 20px; cursor: pointer;
+            transition: var(--ease-default);
+            border: none; background: transparent; width: 100%;
+            text-align: left; color: var(--text2); font-size: 0.88rem;
+        }
+        .onboarding-item:hover { background: rgba(124,92,252,0.04); color: var(--text); }
+        .onboarding-item.done { color: var(--text3); text-decoration: line-through; }
+        .onboarding-check {
+            width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
+            border: 1px solid var(--border); display: inline-flex;
+            align-items: center; justify-content: center;
+            color: transparent; font-size: 11px; line-height: 1;
+        }
+        .onboarding-item.done .onboarding-check {
+            background: var(--ship); border-color: var(--ship); color: #fff;
+        }
+        .onboarding-meta {
+            font-family: var(--font-mono); font-size: 0.7rem;
+            color: var(--text3); margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <nav class="sidebar">
+            <!-- Logo lockup -->
+            <div class="sidebar-logo">
+                <span class="sidebar-logo-mark">O</span>
+                <div>
+                    <span class="sidebar-logo-word">Otto</span>
+                    <span class="sidebar-logo-caption">Command Center</span>
+                </div>
+            </div>
+            <!-- Primary tabs as sidebar nav items -->
+            <nav class="sidebar-nav">
+                <button class="sidebar-item active" id="nav-overview" onclick="switchTab('overview')">
+                    <span class="sidebar-item-dot" style="background:var(--otto)"></span>Overview
+                </button>
+                <button class="sidebar-item" id="nav-settings" onclick="switchTab('settings')">
+                    <span class="sidebar-item-dot" style="background:var(--text3)"></span>Settings
+                </button>
+                <button class="sidebar-item" id="nav-integrations" onclick="switchTab('integrations')">
+                    <span class="sidebar-item-dot" style="background:var(--discover)"></span>Integrations<span class="sidebar-pill" id="nav-integrations-pill" data-tooltip="">0/4</span>
+                </button>
+            </nav>
+            <!-- Five-function nav items (decorative, chamber-colored) -->
+            <div class="sidebar-section-label">Functions</div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-item sidebar-fn" href="#" style="pointer-events: auto; opacity: 1;" onclick="switchTab('settings')"><span class="sidebar-item-dot" style="background:var(--discover)"></span>Scout</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--build)"></span>Forge</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--review)"></span>Sentinel</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--ship)"></span>Relay</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--otto)"></span>Pulse</a>
+            </nav>
+        </nav>
+
+        <main class="main-content">
+            <!-- Overview Tab -->
+            <div id="tab-overview" class="tab-content">
+                <div class="page-header">
+                    <div>
+                        <h1 id="dashboard-title">Your Community</h1>
+                        <p class="subtitle" id="dashboard-subtitle">Monitor and respond to community messages</p>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="stats-grid" id="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Waitlist Signups</div>
+                        <div class="stat-value" id="stat-waitlist">—</div>
+                        <div class="stat-sub">all time</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Communities</div>
+                        <div class="stat-value" id="stat-communities">—</div>
+                        <div class="stat-sub">connected</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Discord Messages</div>
+                        <div class="stat-value" id="stat-discord">—</div>
+                        <div class="stat-sub">processed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Total Messages</div>
+                        <div class="stat-value" id="stat-total">—</div>
+                        <div class="stat-sub">all time</div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="main-grid">
+                    <!-- Alerts + Activity -->
+                    <div>
+                        <!-- Alerts Panel -->
+                        <div class="section-card" id="alerts-panel" data-tour-step="3" style="margin-bottom: 24px;">
+                            <div class="section-header">
+                                <h3>Pending Reviews</h3>
+                                <span class="badge badge-otto" id="alerts-count">0</span>
+                            </div>
+                            <div class="message-list" id="alerts-list">
+                                <div class="loading"><div class="spinner"></div> Loading...</div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="section-card" data-tour-step="2">
+                            <div class="section-header"><h3>Recent Activity</h3></div>
+                            <div class="message-list" id="activity-list">
+                                <div class="loading"><div class="spinner"></div> Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="sidebar-stack">
+                        <!-- Onboarding Checklist -->
+                        <div class="section-card" id="onboarding-card" data-tour-step="0">
+                            <div class="section-header">
+                                <h3>Setup Checklist</h3>
+                                <span class="t-micro" id="onboarding-count" style="color:var(--text3);">0/5</span>
+                            </div>
+                            <div style="padding: 14px 20px 4px;">
+                                <div class="onboarding-progress">
+                                    <div class="onboarding-progress-fill" id="onboarding-progress-fill" style="width:0%"></div>
+                                </div>
+                            </div>
+                            <div class="onboarding-list" id="onboarding-list"></div>
+                        </div>
+                        <!-- Community Info (shown when registered) -->
+                        <div id="community-info-card" class="community-info" style="display:none;">
+                            <div class="community-name" id="community-name">—</div>
+                            <div class="community-meta" id="community-meta">—</div>
+                            <div class="info-row">
+                                <span class="info-label">API Key</span>
+                                <span class="info-value">
+                                    <span id="api-key-display" class="masked">••••••••••••••••</span>
+                                    <button class="reveal-btn" onclick="toggleApiKey()">reveal</button>
+                                </span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Webhook URL</span>
+                                <span class="info-value" id="webhook-url" style="font-size:0.7rem;word-break:break-all;">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Community Health -->
+                        <div class="section-card" id="health-card">
+                            <div class="section-header"><h3>Community Health</h3></div>
+                            <div id="health-chart" style="padding:16px 20px;">
+                                <div class="loading"><div class="spinner"></div></div>
+                            </div>
+                            <div id="health-summary" style="padding:0 20px 16px;font-size:0.82rem;color:var(--text3);"></div>
+                        </div>
+
+                        <!-- Setup Card (shown when not registered) -->
+                        <div id="setup-card" class="setup-card" data-tour-step="1">
+                            <h3>Connect Your Community</h3>
+                            <p>Enter your Discord server details to start monitoring messages.</p>
+
+                            <div id="setup-form-container">
+                                <div class="form-group">
+                                    <label for="setup-guild-id">Discord Guild ID</label>
+                                    <input type="text" id="setup-guild-id" placeholder="e.g. 123456789012345678">
+                                </div>
+                                <div class="form-group">
+                                    <label for="setup-name">Community Name</label>
+                                    <input type="text" id="setup-name" placeholder="e.g. My Awesome Server">
+                                </div>
+                                <button class="primary-btn" id="setup-btn" onclick="registerCommunity()">
+                                    Generate API Key
+                                </button>
+                                <div class="inline-error" id="setup-error" style="display:none;"></div>
+                            </div>
+
+                            <div id="setup-success" class="success-state" style="display:none;">
+                                <div class="icon">&#x2713;</div>
+                                <h3>Community Registered!</h3>
+                                <p>Paste this webhook URL in your Discord server settings.</p>
+                                <div class="webhook-box" id="webhook-url-box">—</div>
+                                <button class="copy-btn" onclick="copyWebhookUrl()">Copy Webhook URL</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-overview -->
+
+            <!-- Settings Tab -->
+            <div id="tab-settings" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Settings</h1>
+                        <p class="subtitle">Manage your community and API access</p>
+                    </div>
+                </div>
+
+                <div class="section-card" style="max-width: 600px;">
+                    <div class="section-header"><h3>Community Details</h3></div>
+                    <div style="padding: 24px;" id="settings-community-details">
+                        <div class="loading"><div class="spinner"></div> Loading...</div>
+                    </div>
+                </div>
+
+                <div class="section-card" id="scout-card" style="max-width: 600px; margin-top: 20px;">
+                    <div class="section-header">
+                        <h3>Scout</h3>
+                        <span class="scout-status" id="scout-status-pill">
+                            <span class="status-dot" id="scout-status-dot"></span>
+                            <span class="scout-status-label" id="scout-status-label">Not connected</span>
+                        </span>
+                    </div>
+                    <div style="padding: 24px;" id="scout-body">
+                        <div id="scout-form-container">
+                            <p style="font-size: 0.85rem; color: var(--text3); margin-bottom: 16px;">
+                                Connect Scout to surface community signals into Otto.
+                            </p>
+                            <div class="form-group">
+                                <label for="scout-api-key">Scout API Key</label>
+                                <input type="text" id="scout-api-key" placeholder="e.g. scout_live_xxxxxxxxxxxxxxxx" autocomplete="off">
+                            </div>
+                            <button class="primary-btn" id="scout-btn" onclick="connectScout()">
+                                Connect Scout
+                            </button>
+                            <div class="inline-error" id="scout-error" style="display: none;"></div>
+                        </div>
+
+                        <div id="scout-connected-view" class="success-state" style="display: none;">
+                            <div class="scout-success-icon">&#x2713;</div>
+                            <h3>Scout Connected</h3>
+                            <p>Otto is receiving Scout signals for this community.</p>
+                            <div style="max-width: 360px; margin: 0 auto;">
+                                <div class="scout-meta-row">
+                                    <span class="info-label">API Key</span>
+                                    <span class="masked" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text2);">
+                                        •••• <span id="scout-key-last4">0000</span>
+                                    </span>
+                                </div>
+                                <button class="copy-btn" style="margin-top: 12px; background: transparent; border: 1px solid var(--border); color: var(--discover);" onclick="disconnectScout()">
+                                    Disconnect Scout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card" id="forge-card" style="max-width: 600px; margin-top: 20px;">
+                    <div class="section-header">
+                        <h3>Forge</h3>
+                        <span class="forge-status" id="forge-status-pill">
+                            <span class="status-dot" id="forge-status-dot"></span>
+                            <span class="forge-status-label" id="forge-status-label">Not connected</span>
+                        </span>
+                    </div>
+                    <div style="padding: 24px;" id="forge-body">
+                        <div id="forge-form-container">
+                            <p style="font-size: 0.85rem; color: var(--text3); margin-bottom: 16px;">
+                                Connect Forge to ship community-driven automations into Otto.
+                            </p>
+                            <div class="form-group">
+                                <label for="forge-api-key">Forge API Key</label>
+                                <input type="text" id="forge-api-key" placeholder="e.g. forge_live_xxxxxxxxxxxxxxxx" autocomplete="off">
+                            </div>
+                            <button class="primary-btn" id="forge-btn" onclick="connectForge()">
+                                Connect Forge
+                            </button>
+                            <div class="inline-error" id="forge-error" style="display: none;"></div>
+                        </div>
+
+                        <div id="forge-connected-view" class="success-state" style="display: none;">
+                            <div class="forge-success-icon">&#x2713;</div>
+                            <h3>Forge Connected</h3>
+                            <p>Otto is wired into Forge for this community.</p>
+                            <div style="max-width: 360px; margin: 0 auto;">
+                                <div class="forge-meta-row">
+                                    <span class="info-label">API Key</span>
+                                    <span class="masked" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text2);">
+                                        •••• <span id="forge-key-last4">0000</span>
+                                    </span>
+                                </div>
+                                <button class="copy-btn" style="margin-top: 12px; background: transparent; border: 1px solid var(--border); color: var(--discover);" onclick="disconnectForge()">
+                                    Disconnect Forge
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card" id="pulse-card" style="max-width: 600px; margin-top: 20px;">
+                    <div class="section-header">
+                        <h3>Pulse</h3>
+                        <span class="pulse-status" id="pulse-status-pill">
+                            <span class="status-dot" id="pulse-status-dot"></span>
+                            <span class="pulse-status-label" id="pulse-status-label">Not connected</span>
+                        </span>
+                    </div>
+                    <div style="padding: 24px;" id="pulse-body">
+                        <div id="pulse-form-container">
+                            <p style="font-size: 0.85rem; color: var(--text3); margin-bottom: 16px;">
+                                Connect Pulse to stream community health metrics into Otto.
+                            </p>
+                            <div class="form-group">
+                                <label for="pulse-api-key">Pulse API Key</label>
+                                <input type="text" id="pulse-api-key" placeholder="e.g. pulse_live_xxxxxxxxxxxxxxxx" autocomplete="off">
+                            </div>
+                            <button class="primary-btn" id="pulse-btn" onclick="connectPulse()">
+                                Connect Pulse
+                            </button>
+                            <div class="inline-error" id="pulse-error" style="display: none;"></div>
+                        </div>
+
+                        <div id="pulse-connected-view" class="success-state" style="display: none;">
+                            <div class="pulse-success-icon">&#x2713;</div>
+                            <h3>Pulse Connected</h3>
+                            <p>Otto is tracking Pulse metrics for this community.</p>
+                            <div style="max-width: 360px; margin: 0 auto;">
+                                <div class="pulse-meta-row">
+                                    <span class="info-label">API Key</span>
+                                    <span class="masked" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text2);">
+                                        •••• <span id="pulse-key-last4">0000</span>
+                                    </span>
+                                </div>
+                                <button class="copy-btn" style="margin-top: 12px; background: transparent; border: 1px solid var(--border); color: var(--discover);" onclick="disconnectPulse()">
+                                    Disconnect Pulse
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card" id="relay-card" style="max-width: 600px; margin-top: 20px;">
+                    <div class="section-header">
+                        <h3>Relay</h3>
+                        <span class="relay-status" id="relay-status-pill">
+                            <span class="status-dot" id="relay-status-dot"></span>
+                            <span class="relay-status-label" id="relay-status-label">Not connected</span>
+                        </span>
+                    </div>
+                    <div style="padding: 24px;" id="relay-body">
+                        <div id="relay-form-container">
+                            <p style="font-size: 0.85rem; color: var(--text3); margin-bottom: 16px;">
+                                Connect Relay to cross-post announcements across community channels.
+                            </p>
+                            <div class="form-group">
+                                <label for="relay-api-key">Relay API Key</label>
+                                <input type="text" id="relay-api-key" placeholder="e.g. relay_live_xxxxxxxxxxxxxxxx" autocomplete="off">
+                            </div>
+                            <button class="primary-btn" id="relay-btn" onclick="connectRelay()">
+                                Connect Relay
+                            </button>
+                            <div class="inline-error" id="relay-error" style="display: none;"></div>
+                        </div>
+
+                        <div id="relay-connected-view" class="success-state" style="display: none;">
+                            <div class="relay-success-icon">&#x2713;</div>
+                            <h3>Relay Connected</h3>
+                            <p>Otto is relaying posts across channels for this community.</p>
+                            <div style="max-width: 360px; margin: 0 auto;">
+                                <div class="relay-meta-row">
+                                    <span class="info-label">API Key</span>
+                                    <span class="masked" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text2);">
+                                        •••• <span id="relay-key-last4">0000</span>
+                                    </span>
+                                </div>
+                                <button class="copy-btn" style="margin-top: 12px; background: transparent; border: 1px solid var(--border); color: var(--discover);" onclick="disconnectRelay()">
+                                    Disconnect Relay
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-settings -->
+
+            <!-- Integrations Tab -->
+            <div id="tab-integrations" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Integrations</h1>
+                        <p class="subtitle">Health overview of all four partner integrations.</p>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 1200px;">
+                    <div class="section-card" id="integrations-scout-card">
+                        <div class="section-header">
+                            <h3>Scout</h3>
+                            <span class="scout-status" id="integrations-scout-status-pill">
+                                <span class="status-dot"></span>
+                                <span class="scout-status-label" id="integrations-scout-status-label">Not connected</span>
+                            </span>
+                        </div>
+                        <div style="padding: 24px;">
+                            <div class="info-row">
+                                <span class="info-label">Status</span>
+                                <span class="info-value" id="integrations-scout-status-value">Not connected</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Last sync</span>
+                                <span class="info-value" id="integrations-scout-lastsync">Never</span>
+                            </div>
+                            <button class="copy-btn" style="margin-top: 16px;" onclick="switchTab('settings'); document.getElementById('scout-card').scrollIntoView({behavior:'smooth', block:'start'});">
+                                Open in Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="section-card" id="integrations-forge-card">
+                        <div class="section-header">
+                            <h3>Forge</h3>
+                            <span class="forge-status" id="integrations-forge-status-pill">
+                                <span class="status-dot"></span>
+                                <span class="forge-status-label" id="integrations-forge-status-label">Not connected</span>
+                            </span>
+                        </div>
+                        <div style="padding: 24px;">
+                            <div class="info-row">
+                                <span class="info-label">Status</span>
+                                <span class="info-value" id="integrations-forge-status-value">Not connected</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Last sync</span>
+                                <span class="info-value" id="integrations-forge-lastsync">Never</span>
+                            </div>
+                            <button class="copy-btn" style="margin-top: 16px;" onclick="switchTab('settings'); document.getElementById('forge-card').scrollIntoView({behavior:'smooth', block:'start'});">
+                                Open in Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="section-card" id="integrations-relay-card">
+                        <div class="section-header">
+                            <h3>Relay</h3>
+                            <span class="relay-status" id="integrations-relay-status-pill">
+                                <span class="status-dot"></span>
+                                <span class="relay-status-label" id="integrations-relay-status-label">Not connected</span>
+                            </span>
+                        </div>
+                        <div style="padding: 24px;">
+                            <div class="info-row">
+                                <span class="info-label">Status</span>
+                                <span class="info-value" id="integrations-relay-status-value">Not connected</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Last sync</span>
+                                <span class="info-value" id="integrations-relay-lastsync">Never</span>
+                            </div>
+                            <button class="copy-btn" style="margin-top: 16px;" onclick="switchTab('settings'); document.getElementById('relay-card').scrollIntoView({behavior:'smooth', block:'start'});">
+                                Open in Settings
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="section-card" id="integrations-pulse-card">
+                        <div class="section-header">
+                            <h3>Pulse</h3>
+                            <span class="pulse-status" id="integrations-pulse-status-pill">
+                                <span class="status-dot"></span>
+                                <span class="pulse-status-label" id="integrations-pulse-status-label">Not connected</span>
+                            </span>
+                        </div>
+                        <div style="padding: 24px;">
+                            <div class="info-row">
+                                <span class="info-label">Status</span>
+                                <span class="info-value" id="integrations-pulse-status-value">Not connected</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Last sync</span>
+                                <span class="info-value" id="integrations-pulse-lastsync">Never</span>
+                            </div>
+                            <button class="copy-btn" style="margin-top: 16px;" onclick="switchTab('settings'); document.getElementById('pulse-card').scrollIntoView({behavior:'smooth', block:'start'});">
+                                Open in Settings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-integrations -->
+
+            <footer style="padding: 24px 0; border-top: 1px solid var(--border); margin-top: 32px;">
+                <span class="otto-sig">built by otto · 2026-07-06</span>
+            </footer>
+        </main>
+    </div>
+
+    <div id="tour-backdrop" class="tour-backdrop" style="display:none;"></div>
+    <div id="tour-tooltip" class="tour-tooltip" style="display:none;">
+        <div class="tour-step-label">Step <span id="tour-step-num">1</span> of 3</div>
+        <div class="tour-title" id="tour-title"></div>
+        <div class="tour-body" id="tour-body"></div>
+        <div class="tour-nav" id="tour-nav"></div>
+        <div class="tour-actions">
+            <button class="tour-skip" id="tour-skip" onclick="tourSkip()">Skip tour</button>
+            <button class="primary-btn" id="tour-next-btn" onclick="tourNext()">Next</button>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        const TOUR_STEPS = [
+            {
+                step: 1,
+                title: 'Connect your Discord community',
+                body: 'Paste your Discord server ID below to generate a webhook URL. Otto will start ingesting messages immediately.',
+                targetSelector: '[data-tour-step="1"]',
+                placement: 'bottom',
+            },
+            {
+                step: 2,
+                title: 'Monitor your activity feed',
+                body: 'All classified messages appear here in real time. Click any message to see intent, sentiment, and AI suggested responses.',
+                targetSelector: '[data-tour-step="2"]',
+                placement: 'top',
+            },
+            {
+                step: 3,
+                title: 'Review AI-suggested responses',
+                body: 'Otto suggests replies to questions and support requests. Approve or reject each one to train the system.',
+                targetSelector: '[data-tour-step="3"]',
+                placement: 'top',
+            },
+        ];
+
+        let tourStep = 0;
+
+        function tourStart() {
+            if (localStorage.getItem('hivesync_tour_done')) return;
+            tourStep = 1;
+            renderTourStep();
+        }
+
+        function renderTourStep() {
+            const step = TOUR_STEPS.find(s => s.step === tourStep);
+            if (!step) { tourEnd(); return; }
+            const target = document.querySelector(step.targetSelector);
+            if (!target) { tourEnd(); return; }
+
+            document.getElementById('tour-step-num').textContent = tourStep;
+            document.getElementById('tour-title').textContent = step.title;
+            document.getElementById('tour-body').textContent = step.body;
+
+            const navDots = TOUR_STEPS.map(s =>
+                `<span class="tour-dot${s.step === tourStep ? ' active' : ''}" onclick="tourGoTo(${s.step})"></span>`
+            ).join('');
+            document.getElementById('tour-nav').innerHTML = navDots;
+
+            const nextBtn = document.getElementById('tour-next-btn');
+            nextBtn.textContent = tourStep === TOUR_STEPS.length ? 'Done' : 'Next';
+
+            positionTourTooltip(target, step.placement);
+            document.getElementById('tour-backdrop').style.display = 'block';
+            document.getElementById('tour-tooltip').style.display = 'block';
+        }
+
+        function positionTourTooltip(target, placement) {
+            const tt = document.getElementById('tour-tooltip');
+            const backdrop = document.getElementById('tour-backdrop');
+            const rect = target.getBoundingClientRect();
+            const ttRect = tt.getBoundingClientRect();
+            backdrop.style.display = 'block';
+
+            let top, left;
+            if (placement === 'bottom') {
+                top = rect.bottom + 12;
+                left = rect.left + (rect.width / 2) - (ttRect.width / 2);
+            } else {
+                top = rect.top - ttRect.height - 12;
+                left = rect.left + (rect.width / 2) - (ttRect.width / 2);
+            }
+            left = Math.max(16, Math.min(left, window.innerWidth - ttRect.width - 16));
+            top = Math.max(16, Math.min(top, window.innerHeight - ttRect.height - 16));
+
+            tt.style.top = top + 'px';
+            tt.style.left = left + 'px';
+        }
+
+        function tourNext() {
+            if (tourStep < TOUR_STEPS.length) {
+                tourStep++;
+                renderTourStep();
+            } else {
+                tourEnd();
+            }
+        }
+
+        function tourGoTo(n) {
+            tourStep = n;
+            renderTourStep();
+        }
+
+        function tourSkip() {
+            tourEnd();
+        }
+
+        function tourEnd() {
+            document.getElementById('tour-backdrop').style.display = 'none';
+            document.getElementById('tour-tooltip').style.display = 'none';
+            localStorage.setItem('hivesync_tour_done', '1');
+        }
+
+        let currentApiKey = null;
+        let fullApiKey = null;
+        let dashboardData = null;
+
+        // ── Get API key from URL or localStorage ──
+        function getApiKey() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlKey = urlParams.get('api_key');
+            if (urlKey) {
+                localStorage.setItem('hivesync_api_key', urlKey);
+                return urlKey;
+            }
+            return localStorage.getItem('hivesync_api_key');
+        }
+
+        // ── Load dashboard data ──
+        async function loadDashboard() {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                showEmptyState();
+                return;
+            }
+
+            currentApiKey = apiKey;
+
+            try {
+                const [dashboardRes, metricsRes] = await Promise.all([
+                  fetch(`${API_BASE}/api/dashboard?api_key=${encodeURIComponent(apiKey)}`),
+                  fetch(`${API_BASE}/api/dashboard/owner-metrics?api_key=${encodeURIComponent(apiKey)}`),
+                ]);
+                const dashboardData = await dashboardRes.json();
+                const metricsData = await metricsRes.json();
+
+                if (!dashboardData.success) {
+                    showAuthError(dashboardData.message);
+                    return;
+                }
+
+                dashboardData = dashboardData;
+                renderDashboard(dashboardData, metricsData);
+
+                // Kick off onboarding tour on first authenticated visit
+                setTimeout(tourStart, 800);
+            } catch (err) {
+                console.error('Failed to load dashboard:', err);
+                document.getElementById('activity-list').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">&#x26A0;</div>
+                        <h3>Connection Error</h3>
+                        <p>Could not load dashboard data. Check that the server is running.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // ── Render dashboard ──
+        function renderDashboard(data, metricsData = {}) {
+            document.getElementById('dashboard-title').textContent = data.community.name;
+            document.getElementById('dashboard-subtitle').textContent = `Guild: ${data.community.guild_id}`;
+
+            if (metricsData.success && metricsData.metrics) {
+                document.getElementById('stat-waitlist').textContent =
+                    metricsData.metrics.waitlist_signups.toLocaleString();
+                document.getElementById('stat-communities').textContent =
+                    metricsData.metrics.communities_connected.toLocaleString();
+                document.getElementById('stat-discord').textContent =
+                    metricsData.metrics.discord_messages.toLocaleString();
+            }
+            document.getElementById('stat-total').textContent = data.stats.total_messages.toLocaleString();
+
+            document.getElementById('community-name').textContent = data.community.name;
+            document.getElementById('community-meta').textContent = `Connected since ${timeAgo(data.community.created_at)}`;
+            document.getElementById('webhook-url').textContent = `/api/discord/webhook/${currentApiKey}`;
+            document.getElementById('community-info-card').style.display = 'block';
+            document.getElementById('setup-card').style.display = 'none';
+
+            const alertsCount = data.alerts.length;
+            document.getElementById('alerts-count').textContent = alertsCount;
+
+            if (alertsCount === 0) {
+                document.getElementById('alerts-list').innerHTML = `
+                    <div class="empty-state" style="padding: 40px 24px;">
+                        <div class="icon">&#x2713;</div>
+                        <h3>All caught up</h3>
+                        <p>No messages pending review.</p>
+                    </div>
+                `;
+            } else {
+                document.getElementById('alerts-list').innerHTML = data.alerts.map(msg => `
+                    <div class="message-item">
+                        <div class="message-meta">
+                            <span class="message-author">${escapeHtml(msg.author_name || 'Anonymous')}</span>
+                            <span class="message-time">${timeAgo(msg.created_at)}</span>
+                        </div>
+                        <div class="message-content">${escapeHtml(msg.content.length > 200 ? msg.content.slice(0, 200) + '...' : msg.content)}</div>
+                        <div class="message-tags">
+                            ${msg.intent ? `<span class="tag tag-${msg.intent}">${formatIntent(msg.intent)}</span>` : ''}
+                            ${msg.sentiment ? `<span class="tag tag-${msg.sentiment}">${msg.sentiment}</span>` : ''}
+                        </div>
+                        ${msg.ai_response ? `
+                            <div class="ai-response">
+                                <div class="ai-response-label">AI Suggested Response</div>
+                                ${escapeHtml(msg.ai_response)}
+                                <div class="response-actions">
+                                    <button class="action-btn approve" onclick="respondToMessage(${msg.id}, 'approve')">Approve</button>
+                                    <button class="action-btn reject" onclick="respondToMessage(${msg.id}, 'reject')">Reject</button>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            }
+
+            if (data.recent_messages.length === 0) {
+                document.getElementById('activity-list').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">&#x1F4EC;</div>
+                        <h3>No messages yet</h3>
+                        <p>Messages will appear here once your community starts activity.</p>
+                    </div>
+                `;
+            } else {
+                document.getElementById('activity-list').innerHTML = data.recent_messages.map(msg => `
+                    <div class="message-item">
+                        <div class="message-meta">
+                            <span class="message-author">${escapeHtml(msg.author_name || 'Anonymous')}</span>
+                            ${msg.channel ? `<span class="message-channel">#${escapeHtml(msg.channel)}</span>` : ''}
+                            <span class="message-time">${timeAgo(msg.created_at)}</span>
+                        </div>
+                        <div class="message-content">${escapeHtml(msg.content.length > 200 ? msg.content.slice(0, 200) + '...' : msg.content)}</div>
+                        <div class="message-tags">
+                            ${msg.intent ? `<span class="tag tag-${msg.intent}">${formatIntent(msg.intent)}</span>` : ''}
+                            ${msg.sentiment ? `<span class="tag tag-${msg.sentiment}">${msg.sentiment}</span>` : ''}
+                            ${msg.sentiment === 'negative' ? `<span class="tag tag-negative" style="animation:pulse 1.5s infinite">CRITICAL</span>` : ''}
+                            <span style="font-size:0.7rem;color:var(--text3);">${msg.response_status}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Community Health chart
+            const vol = data.volume_trend || [];
+            if (vol.length === 0) {
+                document.getElementById('health-chart').innerHTML = '<div style="padding:16px;color:var(--text3);font-size:0.85rem;">No volume data yet</div>';
+                document.getElementById('health-summary').textContent = '';
+            } else {
+                const max = Math.max(...vol.map(d => d.count));
+                const bars = vol.map(d => {
+                    const h = max > 0 ? Math.round((d.count / max) * 60) + 4 : 4;
+                    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                        <div style="width:100%;height:${h}px;background:var(--otto);border-radius:3px 3px 0 0;opacity:0.7;"></div>
+                        <div style="font-size:0.65rem;color:var(--text3);">${new Date(d.date).getDate()}</div>
+                    </div>`;
+                }).join('');
+                document.getElementById('health-chart').innerHTML = `<div style="display:flex;gap:4px;align-items:flex-end;height:64px;">${bars}</div>`;
+                const total = vol.reduce((s,d) => s + d.count, 0);
+                const avg = Math.round(total / vol.length);
+                const today = vol[vol.length - 1]?.count || 0;
+                document.getElementById('health-summary').innerHTML = `Today: <strong style="color:var(--text);">${today}</strong> &nbsp;|&nbsp; 14d avg: <strong style="color:var(--text);">${avg}</strong>`;
+            }
+        }
+
+        // ── Register community ──
+        async function registerCommunity() {
+            const guildId = document.getElementById('setup-guild-id').value.trim();
+            const name = document.getElementById('setup-name').value.trim();
+            const btn = document.getElementById('setup-btn');
+            const errorEl = document.getElementById('setup-error');
+
+            if (!guildId || !name) {
+                errorEl.textContent = 'Please fill in both fields.';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Registering...';
+            errorEl.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/communities`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, guild_id: guildId })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    fullApiKey = data.community.api_key;
+                    localStorage.setItem('hivesync_api_key', fullApiKey);
+                    currentApiKey = fullApiKey;
+
+                    document.getElementById('setup-form-container').style.display = 'none';
+                    document.getElementById('setup-success').style.display = 'block';
+                    document.getElementById('webhook-url-box').textContent = data.webhook_url;
+                    document.getElementById('webhook-url-box').dataset.url = data.webhook_url;
+
+                    loadDashboard();
+                } else {
+                    errorEl.textContent = data.message || 'Registration failed.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Generate API Key';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Network error: ' + err.message;
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Generate API Key';
+            }
+        }
+
+        // ── Copy webhook URL ──
+        function copyWebhookUrl() {
+            const url = document.getElementById('webhook-url-box').dataset.url;
+            if (url) {
+                navigator.clipboard.writeText(window.location.origin + url).then(() => {
+                    const btn = document.querySelector('.copy-btn');
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => { btn.textContent = 'Copy Webhook URL'; }, 2000);
+                });
+            }
+        }
+
+        // ── Respond to message (approve/reject) ──
+        async function respondToMessage(id, action) {
+            try {
+                const res = await fetch(`${API_BASE}/api/messages/${id}/respond`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action })
+                });
+
+                if (res.ok) { loadDashboard(); }
+            } catch (err) {
+                console.error('Failed to update response:', err);
+            }
+        }
+
+        // ── Toggle API key visibility ──
+        function toggleApiKey() {
+            const display = document.getElementById('api-key-display');
+            if (display.dataset.revealed === 'true') {
+                display.textContent = '••••••••••••••••';
+                display.classList.add('masked');
+                display.dataset.revealed = 'false';
+            } else {
+                display.textContent = currentApiKey || '';
+                display.classList.remove('masked');
+                display.dataset.revealed = 'true';
+            }
+        }
+
+        // ── Show auth error ──
+        function showAuthError(message) {
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="icon">&#x26A0;</div>
+                    <h3>Authentication Failed</h3>
+                    <p>${escapeHtml(message || 'Invalid or missing API key.')}</p>
+                </div>
+            `;
+        }
+
+        // ── Show empty state ──
+        function showEmptyState() {
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1;">
+                    <div class="icon">&#x2699;</div>
+                    <h3>No API Key</h3>
+                    <p>Visit the setup section to register your community.</p>
+                </div>
+            `;
+        }
+
+        // ── Tab switching ──
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.getElementById(`nav-${tab}`).classList.add('active');
+
+            if (tab === 'settings') {
+                loadSettings();
+            }
+            if (tab === 'integrations') {
+                loadIntegrationsOverview();
+            }
+        }
+
+        // ── Load settings ──
+        async function loadSettings() {
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/communities/me?api_key=${encodeURIComponent(apiKey)}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    const c = data.community;
+                    document.getElementById('settings-community-details').innerHTML = `
+                        <div class="info-row">
+                            <span class="info-label">Name</span>
+                            <span class="info-value">${escapeHtml(c.name)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Guild ID</span>
+                            <span class="info-value">${escapeHtml(c.guild_id)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Messages</span>
+                            <span class="info-value">${c.message_count}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Created</span>
+                            <span class="info-value">${new Date(c.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">API Key</span>
+                            <span class="info-value" style="word-break:break-all;">${escapeHtml(c.api_key)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Webhook URL</span>
+                            <span class="info-value" style="word-break:break-all;font-size:0.75rem;">${escapeHtml(data.webhook_url)}</span>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                document.getElementById('settings-community-details').innerHTML = `
+                    <div style="padding:24px;color:var(--discover);">Failed to load settings.</div>
+                `;
+            }
+
+            loadScoutConnection();
+            loadForgeConnection();
+            loadPulseConnection();
+            loadRelayConnection();
+            renderIntegrationsSidebarPill();
+        }
+
+        // ── Integrations sidebar pill ──
+        const INTEGRATION_VENDORS = ['scout', 'forge', 'relay', 'pulse'];
+        const INTEGRATION_LABELS  = { scout: 'Scout', forge: 'Forge', relay: 'Relay', pulse: 'Pulse' };
+
+        function computeIntegrationStatus() {
+            const connected = INTEGRATION_VENDORS.filter(v =>
+                localStorage.getItem('hivesync_' + v + '_connected') === '1');
+            return { count: connected.length, total: INTEGRATION_VENDORS.length, connected };
+        }
+
+        function renderIntegrationsSidebarPill() {
+            const pill = document.getElementById('nav-integrations-pill');
+            if (!pill) return;
+            const { count, total, connected } = computeIntegrationStatus();
+            pill.textContent = count + '/' + total;
+            pill.classList.toggle('connected', count > 0);
+            pill.classList.toggle('empty', count === 0);
+            pill.dataset.tooltip = connected.length
+                ? 'Connected: ' + connected.map(v => INTEGRATION_LABELS[v]).join(', ')
+                : 'No integrations connected';
+            pill.classList.add('ready');
+        }
+
+        // ── Integrations overview ──
+        function loadIntegrationsOverview() {
+            const rows = [
+                { vendor: 'scout',  pill: 'integrations-scout-status-pill',  label: 'integrations-scout-status-label',  statusValue: 'integrations-scout-status-value',  lastSync: 'integrations-scout-lastsync' },
+                { vendor: 'forge',  pill: 'integrations-forge-status-pill',  label: 'integrations-forge-status-label',  statusValue: 'integrations-forge-status-value',  lastSync: 'integrations-forge-lastsync' },
+                { vendor: 'relay',  pill: 'integrations-relay-status-pill',  label: 'integrations-relay-status-label',  statusValue: 'integrations-relay-status-value',  lastSync: 'integrations-relay-lastsync' },
+                { vendor: 'pulse',  pill: 'integrations-pulse-status-pill',  label: 'integrations-pulse-status-label',  statusValue: 'integrations-pulse-status-value',  lastSync: 'integrations-pulse-lastsync' },
+            ];
+
+            rows.forEach(r => {
+                const connected = localStorage.getItem('hivesync_' + r.vendor + '_connected') === '1';
+                const pill = document.getElementById(r.pill);
+                const label = document.getElementById(r.label);
+                const statusValue = document.getElementById(r.statusValue);
+                const lastSync = document.getElementById(r.lastSync);
+                const at = localStorage.getItem('hivesync_' + r.vendor + '_connected_at');
+
+                if (connected) {
+                    pill.classList.add('connected');
+                    label.textContent = 'Connected';
+                    statusValue.textContent = 'Connected';
+                    lastSync.textContent = timeAgo(at) || 'just now';
+                } else {
+                    pill.classList.remove('connected');
+                    label.textContent = 'Not connected';
+                    statusValue.textContent = 'Not connected';
+                    lastSync.textContent = 'Never';
+                }
+            });
+
+            renderIntegrationsSidebarPill();
+        }
+
+        // ── Scout connection (mock — awaiting real API spec) ──
+        function loadScoutConnection() {
+            const pill = document.getElementById('scout-status-pill');
+            const label = document.getElementById('scout-status-label');
+            const form = document.getElementById('scout-form-container');
+            const connectedView = document.getElementById('scout-connected-view');
+            const last4El = document.getElementById('scout-key-last4');
+
+            const connected = localStorage.getItem('hivesync_scout_connected') === '1';
+            const last4 = localStorage.getItem('hivesync_scout_key_last4') || '';
+
+            if (connected) {
+                pill.classList.add('connected');
+                label.textContent = 'Connected';
+                form.style.display = 'none';
+                connectedView.style.display = 'block';
+                last4El.textContent = last4;
+            } else {
+                pill.classList.remove('connected');
+                label.textContent = 'Not connected';
+                form.style.display = 'block';
+                connectedView.style.display = 'none';
+            }
+        }
+
+        async function connectScout() {
+            const input = document.getElementById('scout-api-key');
+            const btn = document.getElementById('scout-btn');
+            const errorEl = document.getElementById('scout-error');
+            const value = input.value.trim();
+
+            if (!value || value.length < 8) {
+                errorEl.textContent = 'Please enter a Scout API key (at least 8 characters).';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Connecting…';
+            errorEl.style.display = 'none';
+
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            if (value.toLowerCase().includes('fail')) {
+                errorEl.textContent = 'Invalid API key. Scout rejected the request.';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Connect Scout';
+                return;
+            }
+
+            localStorage.setItem('hivesync_scout_connected', '1');
+            localStorage.setItem('hivesync_scout_key_last4', value.slice(-4));
+            localStorage.setItem('hivesync_scout_connected_at', new Date().toISOString());
+            localStorage.setItem('hivesync_onboarding_scout', '1');
+            loadScoutConnection();
+            renderOnboarding();
+        }
+
+        function disconnectScout() {
+            if (!window.confirm('Disconnect Scout? Existing data stays.')) return;
+            localStorage.removeItem('hivesync_scout_connected');
+            localStorage.removeItem('hivesync_scout_key_last4');
+            localStorage.removeItem('hivesync_scout_connected_at');
+            localStorage.removeItem('hivesync_onboarding_scout');
+            document.getElementById('scout-api-key').value = '';
+            loadScoutConnection();
+            renderOnboarding();
+        }
+
+        // ── Forge connection (mock — awaiting real API spec) ──
+        function loadForgeConnection() {
+            const pill = document.getElementById('forge-status-pill');
+            const label = document.getElementById('forge-status-label');
+            const form = document.getElementById('forge-form-container');
+            const connectedView = document.getElementById('forge-connected-view');
+            const last4El = document.getElementById('forge-key-last4');
+
+            const connected = localStorage.getItem('hivesync_forge_connected') === '1';
+            const last4 = localStorage.getItem('hivesync_forge_key_last4') || '';
+
+            if (connected) {
+                pill.classList.add('connected');
+                label.textContent = 'Connected';
+                form.style.display = 'none';
+                connectedView.style.display = 'block';
+                last4El.textContent = last4;
+            } else {
+                pill.classList.remove('connected');
+                label.textContent = 'Not connected';
+                form.style.display = 'block';
+                connectedView.style.display = 'none';
+            }
+        }
+
+        async function connectForge() {
+            const input = document.getElementById('forge-api-key');
+            const btn = document.getElementById('forge-btn');
+            const errorEl = document.getElementById('forge-error');
+            const value = input.value.trim();
+
+            if (!value || value.length < 8) {
+                errorEl.textContent = 'Please enter a Forge API key (at least 8 characters).';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Connecting…';
+            errorEl.style.display = 'none';
+
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            if (value.toLowerCase().includes('fail')) {
+                errorEl.textContent = 'Invalid API key. Forge rejected the request.';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Connect Forge';
+                return;
+            }
+
+            localStorage.setItem('hivesync_forge_connected', '1');
+            localStorage.setItem('hivesync_forge_key_last4', value.slice(-4));
+            localStorage.setItem('hivesync_forge_connected_at', new Date().toISOString());
+            loadForgeConnection();
+        }
+
+        function disconnectForge() {
+            if (!window.confirm('Disconnect Forge? Existing data stays.')) return;
+            localStorage.removeItem('hivesync_forge_connected');
+            localStorage.removeItem('hivesync_forge_key_last4');
+            localStorage.removeItem('hivesync_forge_connected_at');
+            document.getElementById('forge-api-key').value = '';
+            loadForgeConnection();
+        }
+
+        // ── Pulse connection (mock — awaiting real API spec) ──
+        function loadPulseConnection() {
+            const pill = document.getElementById('pulse-status-pill');
+            const label = document.getElementById('pulse-status-label');
+            const form = document.getElementById('pulse-form-container');
+            const connectedView = document.getElementById('pulse-connected-view');
+            const last4El = document.getElementById('pulse-key-last4');
+
+            const connected = localStorage.getItem('hivesync_pulse_connected') === '1';
+            const last4 = localStorage.getItem('hivesync_pulse_key_last4') || '';
+
+            if (connected) {
+                pill.classList.add('connected');
+                label.textContent = 'Connected';
+                form.style.display = 'none';
+                connectedView.style.display = 'block';
+                last4El.textContent = last4;
+            } else {
+                pill.classList.remove('connected');
+                label.textContent = 'Not connected';
+                form.style.display = 'block';
+                connectedView.style.display = 'none';
+            }
+        }
+
+        async function connectPulse() {
+            const input = document.getElementById('pulse-api-key');
+            const btn = document.getElementById('pulse-btn');
+            const errorEl = document.getElementById('pulse-error');
+            const value = input.value.trim();
+
+            if (!value || value.length < 8) {
+                errorEl.textContent = 'Please enter a Pulse API key (at least 8 characters).';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Connecting…';
+            errorEl.style.display = 'none';
+
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            if (value.toLowerCase().includes('fail')) {
+                errorEl.textContent = 'Invalid API key. Pulse rejected the request.';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Connect Pulse';
+                return;
+            }
+
+            localStorage.setItem('hivesync_pulse_connected', '1');
+            localStorage.setItem('hivesync_pulse_key_last4', value.slice(-4));
+            localStorage.setItem('hivesync_pulse_connected_at', new Date().toISOString());
+            loadPulseConnection();
+        }
+
+        function disconnectPulse() {
+            if (!window.confirm('Disconnect Pulse? Existing data stays.')) return;
+            localStorage.removeItem('hivesync_pulse_connected');
+            localStorage.removeItem('hivesync_pulse_key_last4');
+            localStorage.removeItem('hivesync_pulse_connected_at');
+            document.getElementById('pulse-api-key').value = '';
+            loadPulseConnection();
+        }
+
+        // ── Relay connection (mock — awaiting real API spec) ──
+        function loadRelayConnection() {
+            const pill = document.getElementById('relay-status-pill');
+            const label = document.getElementById('relay-status-label');
+            const form = document.getElementById('relay-form-container');
+            const connectedView = document.getElementById('relay-connected-view');
+            const last4El = document.getElementById('relay-key-last4');
+
+            const connected = localStorage.getItem('hivesync_relay_connected') === '1';
+            const last4 = localStorage.getItem('hivesync_relay_key_last4') || '';
+
+            if (connected) {
+                pill.classList.add('connected');
+                label.textContent = 'Connected';
+                form.style.display = 'none';
+                connectedView.style.display = 'block';
+                last4El.textContent = last4;
+            } else {
+                pill.classList.remove('connected');
+                label.textContent = 'Not connected';
+                form.style.display = 'block';
+                connectedView.style.display = 'none';
+            }
+        }
+
+        async function connectRelay() {
+            const input = document.getElementById('relay-api-key');
+            const btn = document.getElementById('relay-btn');
+            const errorEl = document.getElementById('relay-error');
+            const value = input.value.trim();
+
+            if (!value || value.length < 8) {
+                errorEl.textContent = 'Please enter a Relay API key (at least 8 characters).';
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Connecting…';
+            errorEl.style.display = 'none';
+
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            if (value.toLowerCase().includes('fail')) {
+                errorEl.textContent = 'Invalid API key. Relay rejected the request.';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Connect Relay';
+                return;
+            }
+
+            localStorage.setItem('hivesync_relay_connected', '1');
+            localStorage.setItem('hivesync_relay_key_last4', value.slice(-4));
+            localStorage.setItem('hivesync_relay_connected_at', new Date().toISOString());
+            loadRelayConnection();
+        }
+
+        function disconnectRelay() {
+            if (!window.confirm('Disconnect Relay? Existing data stays.')) return;
+            localStorage.removeItem('hivesync_relay_connected');
+            localStorage.removeItem('hivesync_relay_key_last4');
+            localStorage.removeItem('hivesync_relay_connected_at');
+            document.getElementById('relay-api-key').value = '';
+            loadRelayConnection();
+        }
+
+        // ── Helpers ──
+        function formatIntent(intent) {
+            if (!intent) return '';
+            return intent.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function timeAgo(dateStr) {
+            if (!dateStr) return '';
+            const now = new Date();
+            const date = new Date(dateStr);
+            const diff = Math.floor((now - date) / 1000);
+
+            if (diff < 60) return 'just now';
+            if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+            if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+            return date.toLocaleDateString();
+        }
+
+        // ── Onboarding checklist ──
+        const ONBOARDING_STEPS = [
+            { id: 'scout',   label: 'Connect Scout',            meta: 'settings tab' },
+            { id: 'forge',   label: 'Connect Forge',            meta: 'settings tab' },
+            { id: 'sending', label: 'Verify sending domain',    meta: '' },
+            { id: 'member',  label: 'Invite your first member', meta: 'discord' },
+            { id: 'ga4',     label: 'Set up GA4 goals',         meta: '' },
+        ];
+
+        function renderOnboarding() {
+            const completed = ONBOARDING_STEPS.filter(s => localStorage.getItem('hivesync_onboarding_' + s.id) === '1').length;
+            document.getElementById('onboarding-count').textContent = completed + '/' + ONBOARDING_STEPS.length;
+            document.getElementById('onboarding-progress-fill').style.width = (completed / ONBOARDING_STEPS.length * 100) + '%';
+
+            document.getElementById('onboarding-list').innerHTML = ONBOARDING_STEPS.map(step => {
+                const done = localStorage.getItem('hivesync_onboarding_' + step.id) === '1';
+                return `<button class="onboarding-item ${done ? 'done' : ''}" onclick="toggleOnboarding('${step.id}')">
+                    <span class="onboarding-check">✓</span>
+                    <span>${step.label}</span>
+                    ${step.meta ? `<span class="onboarding-meta">${step.meta}</span>` : ''}
+                </button>`;
+            }).join('');
+        }
+
+        function toggleOnboarding(id) {
+            const key = 'hivesync_onboarding_' + id;
+            if (localStorage.getItem(key) === '1') {
+                localStorage.removeItem(key);
+            } else {
+                localStorage.setItem(key, '1');
+            }
+            renderOnboarding();
+        }
+
+        // ── Init ──
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            renderOnboarding();
+            renderIntegrationsSidebarPill();
+
+            setInterval(function() {
+                if (!document.getElementById('tab-overview').classList.contains('hidden')) {
+                    loadDashboard();
+                }
+                if (!document.getElementById('tab-integrations').classList.contains('hidden')) {
+                    loadIntegrationsOverview();
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>

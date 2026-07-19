@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service — Otto</title>
+    <meta name="description" content="Otto terms of service — acceptable use, waitlist terms, beta disclaimer, intellectual property, and liability.">
+    <link rel="canonical" href="https://orbitwithotto.com/terms">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://orbitwithotto.com/terms">
+    <meta property="og:title" content="Terms of Service — Otto">
+    <meta property="og:description" content="Otto terms of service — acceptable use, waitlist terms, beta disclaimer, intellectual property, and liability.">
+    <meta property="og:image" content="https://otto.polsia.app/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="/otto-brand.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Layout */
+        .layout { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px; flex-shrink: 0;
+            background: var(--raised); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            padding: 24px 0; position: sticky; top: 0; height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            display: flex; align-items: center; gap: 10px;
+            padding: 0 20px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px;
+        }
+        .sidebar-logo-mark { font-family: var(--font-sans); font-size: 20px; font-weight: 800; color: var(--otto); }
+        .sidebar-logo-word { display: block; font-family: var(--font-sans); font-size: 14px; font-weight: 700; color: var(--text); }
+        .sidebar-logo-caption { display: block; font-family: var(--font-mono); font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+
+        .sidebar-nav { display: flex; flex-direction: column; padding: 0 12px; gap: 2px; }
+
+        .sidebar-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: var(--radius-sm);
+            font-size: 13px; font-weight: 500; color: var(--text2);
+            text-decoration: none; cursor: pointer;
+            transition: var(--ease-default);
+            border-left: 2px solid transparent;
+            background: none; border-right: none; border-top: none; border-bottom: none;
+            border-left: 2px solid transparent;
+            text-align: left; width: 100%;
+        }
+        .sidebar-item:hover { color: var(--text); background: rgba(124,92,252,0.06); }
+        .sidebar-item.active {
+            color: var(--text); border-left-color: var(--otto);
+            background: rgba(124,92,252,0.08);
+        }
+        .sidebar-item-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+        .sidebar-section-label {
+            font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text3);
+            padding: 16px 24px 8px;
+        }
+        .sidebar-fn { opacity: 0.5; pointer-events: none; }
+
+        /* Main content */
+        .main-content { flex: 1; min-width: 0; padding: 32px 24px; }
+
+        .page-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 32px;
+        }
+        .page-header h1 { font-size: 1.8rem; color: var(--text); }
+        .page-header .subtitle { color: var(--text3); font-size: 0.95rem; margin-top: 4px; }
+
+        /* Policy content */
+        .policy-content { max-width: 760px; }
+        .policy-section { margin-bottom: 36px; }
+        .policy-section h2 { color: var(--text); margin-bottom: 12px; }
+        .policy-section p,
+        .policy-section li {
+            color: var(--text2);
+            font-size: 0.95rem;
+            line-height: 1.65;
+            margin-bottom: 10px;
+        }
+        .policy-section ul { padding-left: 22px; margin-bottom: 10px; }
+        .policy-section ul li { margin-bottom: 6px; }
+        .policy-section a { color: var(--otto); text-decoration: none; }
+        .policy-section a:hover { color: var(--otto-hover); text-decoration: underline; }
+        .policy-section strong { color: var(--text); font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <nav class="sidebar">
+            <div class="sidebar-logo">
+                <span class="sidebar-logo-mark">O</span>
+                <div>
+                    <span class="sidebar-logo-word">Otto</span>
+                    <span class="sidebar-logo-caption">Command Center</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-item" href="/dashboard"><span class="sidebar-item-dot" style="background:var(--text3)"></span>Overview</a>
+                <a class="sidebar-item" href="/dashboard"><span class="sidebar-item-dot" style="background:var(--text3)"></span>Settings</a>
+            </nav>
+            <div class="sidebar-section-label">Functions</div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--discover)"></span>Scout</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--build)"></span>Forge</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--review)"></span>Sentinel</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--ship)"></span>Relay</a>
+                <a class="sidebar-item sidebar-fn" href="#"><span class="sidebar-item-dot" style="background:var(--otto)"></span>Pulse</a>
+            </nav>
+        </nav>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Terms of Service</h1>
+                    <p class="subtitle">Last updated: 2026-07-10</p>
+                </div>
+            </div>
+
+            <div class="policy-content">
+                <div class="policy-section">
+                    <h2 class="t-h1">Acceptance</h2>
+                    <p>By accessing the Otto marketing site at <code>orbitwithotto.com</code>, browsing it, or submitting the waitlist form, you agree to these Terms of Service. If you do not agree, please do not use the site or submit the form.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">The service</h2>
+                    <p>Otto is an autonomous AI community-management agent. The current scope of the product includes ingesting messages from Discord (and other supported platforms), classifying intent and sentiment, generating helpful responses, and surfacing activity in a web dashboard. Specific features, integrations, and pricing may change over time, and any reference to them on this site is descriptive rather than a commitment.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Acceptable use</h2>
+                    <p>When you use Otto or interact with our marketing site, you agree not to:</p>
+                    <ul>
+                        <li>Use Otto to publish or distribute illegal content, spam, or malware.</li>
+                        <li>Use Otto to harass, threaten, or abuse community members.</li>
+                        <li>Attempt to reverse-engineer, probe, or otherwise interfere with the Otto AI pipeline, prompt construction, or rate limits.</li>
+                        <li>Use Otto in any way that violates the terms of your underlying community platform (Discord, Slack, etc.).</li>
+                        <li>Submit false information to the waitlist or impersonate another person or organization.</li>
+                    </ul>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">The waitlist</h2>
+                    <p>Joining the Otto waitlist does <strong>not</strong> guarantee access to the product. Onboarding is granted at our discretion and depends on capacity, platform readiness, and fit. There is <strong>no SLA</strong> for waitlist progression or onboarding timing — we may pause, reprioritize, or close the waitlist at any time. If we remove you from the waitlist, we will tell you why.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Beta disclaimer</h2>
+                    <p>Otto is provided as-is during the waitlist and beta period. Functionality may change, break, or be withdrawn without notice. You should not rely on Otto for safety-critical, compliance-critical, or revenue-critical community operations during this period, and you are responsible for reviewing its outputs before they reach your members.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Intellectual property</h2>
+                    <p>The Otto name, logo, brand identity, design system, marketing copy, and software are the property of Airlock Labs and are protected by applicable intellectual-property law. You retain ownership of the community content you provide to Otto (your messages, your member data, your brand assets). You grant us a limited license to process that content only as needed to operate the service for you.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Limitation of liability</h2>
+                    <p>To the maximum extent permitted by law, Otto and Airlock Labs are not liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of profits, revenues, data, or goodwill, arising out of or related to your use of (or inability to use) Otto or these pages, even if we have been advised of the possibility of such damages. Our total aggregate liability for any claim relating to the service will not exceed the amount you have paid us in the twelve (12) months before the claim.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Governing law</h2>
+                    <p>These terms are governed by the laws of the jurisdiction in which Airlock Labs is incorporated, without regard to its conflict-of-laws provisions.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Contact</h2>
+                    <p>Questions about these terms? Email us at <a href="mailto:legal@orbitwithotto.com">legal@orbitwithotto.com</a>.</p>
+                </div>
+
+                <div class="policy-section">
+                    <h2 class="t-h1">Changes to these terms</h2>
+                    <p>If we make material changes to these terms, we will update the "Last updated" date above and, where appropriate, notify active waitlist members by email.</p>
+                </div>
+            </div>
+
+            <footer style="padding: 24px 0; border-top: 1px solid var(--border); margin-top: 32px;">
+                <span class="otto-sig">built by otto · 2026-07-10</span>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>
