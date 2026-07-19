@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hivesync — Dashboard</title>
-    <link rel="stylesheet" href="/otto-brand.css">
+    <link rel="stylesheet" href="otto-brand.css">
     <!-- Google Analytics 4 -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=__GA4_MEASUREMENT_ID__"></script>
     <script>
@@ -424,8 +424,119 @@
         .wl-badge.slack   { background: rgba(74,21,75,0.15);   color: #E01E5A; }
         .wl-badge.forums  { background: rgba(34,197,94,0.12);  color: #22C55E; }
 
+        /* ═══ Community Ops (connectors) ═══ */
+        .conn-note {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 12px 16px; margin-bottom: 24px;
+            background: rgba(0,209,255,0.06); border: 1px solid rgba(0,209,255,0.2);
+            border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text2); line-height: 1.5;
+        }
+        .conn-note strong { color: var(--accent); }
+
+        .conn-form { padding: 20px; }
+        .conn-form .field { margin-bottom: 12px; }
+        .conn-form label {
+            display: block; font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 6px;
+        }
+        .conn-form input, .conn-form select, .conn-form textarea {
+            font-family: var(--font-sans); font-size: 13px; color: var(--text);
+            background: var(--sunken); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 10px 14px;
+            transition: var(--ease-default); outline: none; width: 100%;
+        }
+        .conn-form textarea { resize: vertical; min-height: 70px; }
+        .conn-form input:focus, .conn-form select:focus, .conn-form textarea:focus {
+            border-color: var(--otto); box-shadow: 0 0 0 3px var(--otto-glow);
+        }
+        .conn-form input::placeholder, .conn-form textarea::placeholder { color: var(--text3); }
+        .conn-form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .conn-check { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text2); cursor: pointer; margin-bottom: 12px; }
+        .conn-check input { width: auto !important; }
+
+        .conn-table { width: 100%; border-collapse: collapse; }
+        .conn-table th {
+            text-align: left; font-size: 0.72rem; color: var(--text3); text-transform: uppercase;
+            letter-spacing: 0.06em; font-family: var(--font-mono);
+            padding: 12px 16px; border-bottom: 1px solid var(--border); white-space: nowrap;
+        }
+        .conn-table td { padding: 12px 16px; font-size: 0.85rem; color: var(--text2); border-bottom: 1px solid var(--border); vertical-align: top; }
+        .conn-table tr:hover td { background: rgba(124,92,252,0.03); }
+        .conn-table .mono, .mono { font-family: var(--font-mono); font-size: 0.78rem; }
+
+        .badge {
+            display: inline-block; font-size: 0.7rem; padding: 3px 10px; border-radius: 100px;
+            font-weight: 600; font-family: var(--font-sans); white-space: nowrap;
+        }
+        .badge.on   { background: rgba(34,197,94,0.12); color: var(--ship); }
+        .badge.off  { background: rgba(100,116,139,0.12); color: var(--text3); }
+        .badge.soon { background: rgba(234,179,8,0.12); color: var(--build); font-size: 0.6rem; margin-left: auto; }
+        .badge.queued            { background: rgba(100,116,139,0.12); color: var(--text3); }
+        .badge.claimed,
+        .badge.running           { background: rgba(0,209,255,0.1); color: var(--accent); }
+        .badge.awaiting_approval { background: rgba(234,179,8,0.12); color: var(--build); }
+        .badge.succeeded         { background: rgba(34,197,94,0.12); color: var(--ship); }
+        .badge.failed            { background: rgba(239,68,68,0.12); color: var(--discover); }
+        .badge.kind { background: rgba(124,92,252,0.1); color: var(--otto); font-family: var(--font-mono); font-weight: 500; }
+
+        .icon-btn {
+            font-family: var(--font-sans); font-weight: 600; font-size: 11px;
+            padding: 5px 10px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); cursor: pointer; transition: var(--ease-default);
+            background: transparent; color: var(--text2);
+        }
+        .icon-btn:hover { border-color: var(--otto); color: var(--otto); }
+        .icon-btn.danger:hover { border-color: rgba(239,68,68,0.4); color: var(--discover); background: rgba(239,68,68,0.08); }
+
+        /* Lock screen */
+        .lock-wrap { display: flex; justify-content: center; padding: 60px 0; }
+        .lock-card { width: 100%; max-width: 440px; }
+        .lock-note { font-size: 0.78rem; color: var(--text3); line-height: 1.5; margin-top: 12px; }
+
+        /* Embed preview (Discord-style) */
+        .embed-preview {
+            background: #2B2D31; border-left: 4px solid var(--otto);
+            border-radius: 4px; padding: 12px 16px; margin: 0 20px 20px;
+            font-size: 0.85rem; color: #DBDEE1; line-height: 1.45; word-break: break-word;
+        }
+        .embed-preview .ep-title { font-weight: 700; color: #F2F3F5; margin-bottom: 6px; }
+        .embed-preview .ep-title a { color: #00A8FC; text-decoration: none; }
+        .embed-preview .ep-desc { white-space: pre-wrap; }
+        .embed-preview .ep-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .embed-preview .ep-field { flex: 1 1 100%; }
+        .embed-preview .ep-field.inline { flex: 1 1 30%; min-width: 120px; }
+        .embed-preview .ep-field-name { font-weight: 700; font-size: 0.78rem; color: #F2F3F5; margin-bottom: 2px; }
+        .embed-preview .ep-footer { margin-top: 10px; font-size: 0.72rem; color: #949BA4; }
+        .embed-preview .ep-empty { color: #949BA4; font-style: italic; }
+
+        .composer-fields .cf-row {
+            display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 8px; align-items: center; margin-bottom: 8px;
+        }
+        .composer-fields .cf-row .conn-check { margin-bottom: 0; }
+
+        /* Command Otto */
+        .job-item { padding: 14px 24px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; border-left: 2px solid transparent; }
+        .job-item:hover { background: rgba(124,92,252,0.04); }
+        .job-item.selected { background: rgba(124,92,252,0.08); border-left-color: var(--otto); }
+        .job-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .job-cap { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text); }
+        .job-time { font-size: 0.72rem; color: var(--text3); margin-left: auto; }
+        .draft-box {
+            margin: 0 20px 16px; padding: 14px 16px;
+            background: rgba(124,92,252,0.05); border-left: 2px solid var(--otto);
+            border-radius: 0 8px 8px 0; font-size: 0.85rem; color: var(--text2);
+            line-height: 1.55; white-space: pre-wrap; word-break: break-word;
+            max-height: 340px; overflow-y: auto;
+        }
+
+        /* Coming soon stubs */
+        .soon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .soon-card-body { padding: 20px; color: var(--text3); font-size: 0.85rem; line-height: 1.55; }
+        .soon-card-body .skeleton { height: 12px; margin-top: 10px; }
+
         /* Responsive */
         @media (max-width: 900px) {
+            .soon-grid { grid-template-columns: 1fr; }
             .layout { flex-direction: column; }
             .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; padding: 12px 16px; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -451,11 +562,52 @@
             </div>
             <!-- Primary tabs as sidebar nav items -->
             <nav class="sidebar-nav">
-                <a class="sidebar-item active" id="nav-messages" href="/dashboard">
+                <a class="sidebar-item active" id="nav-messages" href="/dashboard" onclick="switchTab('messages', this); return false;">
                     <span class="sidebar-item-dot" style="background:var(--otto)"></span>Messages
                 </a>
-                <a class="sidebar-item" id="nav-waitlist" href="/dashboard/waitlist">
+                <a class="sidebar-item" id="nav-waitlist" href="/dashboard" onclick="switchTab('waitlist', this); return false;">
                     <span class="sidebar-item-dot" style="background:var(--ship)"></span>Waitlist
+                </a>
+            </nav>
+            <!-- Community Ops — the /connectors/* control plane (key-gated) -->
+            <div class="sidebar-section-label">Community Ops</div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-item" id="nav-channels" href="/dashboard" onclick="switchTab('channels', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--accent)"></span>Channels
+                </a>
+                <a class="sidebar-item" id="nav-composer" href="/dashboard" onclick="switchTab('composer', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--otto)"></span>Composer
+                </a>
+                <a class="sidebar-item" id="nav-sources" href="/dashboard" onclick="switchTab('sources', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--build)"></span>Sources
+                </a>
+                <a class="sidebar-item" id="nav-scheduled" href="/dashboard" onclick="switchTab('scheduled', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--review)"></span>Scheduled
+                </a>
+                <a class="sidebar-item" id="nav-activity" href="/dashboard" onclick="switchTab('activity', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--ship)"></span>Activity
+                </a>
+                <a class="sidebar-item" id="nav-otto" href="/dashboard" onclick="switchTab('otto', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--otto)"></span>Command Otto
+                </a>
+                <a class="sidebar-item" id="nav-signout" href="/dashboard" style="display:none" onclick="connSignOut(); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--text3)"></span>Sign out
+                </a>
+            </nav>
+            <!-- Not backed yet (contract §8) — laid out, deliberately disabled -->
+            <div class="sidebar-section-label">Coming Soon</div>
+            <nav class="sidebar-nav">
+                <a class="sidebar-item" href="/dashboard" onclick="switchTab('soon', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--discover)"></span>Moderation<span class="badge soon">soon</span>
+                </a>
+                <a class="sidebar-item" href="/dashboard" onclick="switchTab('soon', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--build)"></span>Roles &amp; Onboarding<span class="badge soon">soon</span>
+                </a>
+                <a class="sidebar-item" href="/dashboard" onclick="switchTab('soon', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--review)"></span>Leveling<span class="badge soon">soon</span>
+                </a>
+                <a class="sidebar-item" href="/dashboard" onclick="switchTab('soon', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--accent)"></span>Analytics<span class="badge soon">soon</span>
                 </a>
             </nav>
             <!-- Five-function nav items (decorative, chamber-colored) -->
@@ -615,6 +767,401 @@
                 </div>
             </div><!-- /tab-waitlist -->
 
+            <!-- ═══ Community Ops: key gate (contract §0) ═══ -->
+            <div id="tab-lock" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Community Ops</h1>
+                        <p class="subtitle">Master key required — every /connectors route is gated</p>
+                    </div>
+                </div>
+                <div class="lock-wrap">
+                    <div class="section-card lock-card">
+                        <div class="section-header"><h3>Sign in</h3></div>
+                        <div class="conn-form">
+                            <div class="field">
+                                <label for="lock-key">Admin master key</label>
+                                <input type="password" id="lock-key" placeholder="Paste the master key" autocomplete="off">
+                            </div>
+                            <button class="send-btn" id="lock-btn" onclick="connUnlock()">Unlock</button>
+                            <div class="test-result" id="lock-result"></div>
+                            <p class="lock-note">The key is held in this tab's session only and sent as an
+                            <span class="mono">Authorization: Bearer</span> header on every request.
+                            It is never rendered back and never logged.</p>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-lock -->
+
+            <!-- ═══ Channels (contract §2) ═══ -->
+            <div id="tab-channels" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Channels</h1>
+                        <p class="subtitle">Discord routes — one webhook per tier. Sends only go to enabled routes.</p>
+                    </div>
+                </div>
+                <div class="main-grid">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Configured Routes</h3>
+                            <button class="filter-btn" onclick="loadChannels()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="conn-table">
+                                <thead><tr><th>Tier</th><th>Label</th><th>Webhook</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+                                <tbody id="channels-tbody">
+                                    <tr><td colspan="6" style="text-align:center;padding:40px;"><div class="loading"><div class="spinner"></div> Loading...</div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="sidebar-stack">
+                        <div class="section-card">
+                            <div class="section-header"><h3>Add / Update Route</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="ch-tier">Tier (route key)</label>
+                                    <input id="ch-tier" list="tier-presets" placeholder="top" autocomplete="off">
+                                    <datalist id="tier-presets">
+                                        <option value="top"></option><option value="qualified"></option>
+                                        <option value="watch"></option><option value="pass"></option><option value="all"></option>
+                                    </datalist>
+                                </div>
+                                <div class="field">
+                                    <label for="ch-label">Label</label>
+                                    <input id="ch-label" placeholder="Top Plays" autocomplete="off">
+                                </div>
+                                <div class="field">
+                                    <label for="ch-webhook">Discord webhook URL</label>
+                                    <input type="password" id="ch-webhook" placeholder="https://discord.com/api/webhooks/…" autocomplete="off">
+                                </div>
+                                <label class="conn-check"><input type="checkbox" id="ch-enabled" checked> Enabled</label>
+                                <button class="send-btn" onclick="saveChannel()">Save Route</button>
+                                <div class="test-result" id="ch-result"></div>
+                                <p class="lock-note">Webhooks are write-only secrets — shown masked after save. Saving an
+                                existing tier updates it in place; to rotate a webhook, paste the new full URL.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-channels -->
+
+            <!-- ═══ Composer (contract §3) ═══ -->
+            <div id="tab-composer" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Composer</h1>
+                        <p class="subtitle">Compose a rich embed or plain message and send it now</p>
+                    </div>
+                </div>
+                <div class="main-grid">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Compose</h3>
+                            <div class="filter-row">
+                                <button class="filter-btn active" id="mode-embed" onclick="setComposeMode('embed')">Embed</button>
+                                <button class="filter-btn" id="mode-plain" onclick="setComposeMode('plain')">Plain text</button>
+                            </div>
+                        </div>
+                        <div class="conn-form" id="compose-embed-form">
+                            <div class="field">
+                                <label for="em-title">Title (&le;256)</label>
+                                <input id="em-title" maxlength="256" oninput="renderEmbedPreview()" autocomplete="off">
+                            </div>
+                            <div class="field">
+                                <label for="em-desc">Description (&le;4096)</label>
+                                <textarea id="em-desc" maxlength="4096" rows="5" oninput="renderEmbedPreview()"></textarea>
+                            </div>
+                            <div class="row2">
+                                <div class="field">
+                                    <label for="em-url">Title URL</label>
+                                    <input id="em-url" placeholder="https://…" oninput="renderEmbedPreview()" autocomplete="off">
+                                </div>
+                                <div class="field">
+                                    <label for="em-color">Color</label>
+                                    <input type="color" id="em-color" value="#7C5CFC" oninput="renderEmbedPreview()" style="height:38px;padding:4px;">
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label>Fields (&le;10)</label>
+                                <div class="composer-fields" id="em-fields"></div>
+                                <button class="icon-btn" onclick="addEmbedField()">+ Add field</button>
+                            </div>
+                            <div class="row2">
+                                <div class="field">
+                                    <label for="em-footer">Footer</label>
+                                    <input id="em-footer" maxlength="2048" oninput="renderEmbedPreview()" autocomplete="off">
+                                </div>
+                                <label class="conn-check" style="margin-top:22px;"><input type="checkbox" id="em-timestamp" onchange="renderEmbedPreview()"> Timestamp</label>
+                            </div>
+                        </div>
+                        <div class="conn-form" id="compose-plain-form" style="display:none;">
+                            <div class="field">
+                                <label for="em-content">Message (&le;2000)</label>
+                                <textarea id="em-content" maxlength="2000" rows="8" oninput="renderEmbedPreview()"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sidebar-stack">
+                        <div class="section-card">
+                            <div class="section-header"><h3>Send</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="em-channel">Channel route</label>
+                                    <select id="em-channel"></select>
+                                </div>
+                                <button class="send-btn" id="em-send-btn" onclick="sendComposed()">Send Now</button>
+                                <div class="test-result" id="em-result"></div>
+                                <p class="lock-note">@everyone / @here / role pings are stripped server-side on every
+                                send — there is deliberately no ping toggle.</p>
+                            </div>
+                        </div>
+                        <div class="section-card">
+                            <div class="section-header"><h3>Preview</h3></div>
+                            <div style="padding-top:20px;">
+                                <div class="embed-preview" id="embed-preview"><span class="ep-empty">Nothing to preview yet</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-composer -->
+
+            <!-- ═══ Sources (contract §4) ═══ -->
+            <div id="tab-sources" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Sources</h1>
+                        <p class="subtitle">RSS / news feeds routed to channel tiers</p>
+                    </div>
+                </div>
+                <div class="conn-note"><span><strong>Config only for now.</strong> Source storage and management are live,
+                but the poller that fetches feeds and auto-posts items is not built yet. Configure sources now —
+                auto-posting lands soon.</span></div>
+                <div class="main-grid">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Feeds</h3>
+                            <button class="filter-btn" onclick="loadSources()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="conn-table">
+                                <thead><tr><th>Name</th><th>URL</th><th>Route</th><th>Trust</th><th>Status</th><th>Added</th><th></th></tr></thead>
+                                <tbody id="sources-tbody">
+                                    <tr><td colspan="7" style="text-align:center;padding:40px;"><div class="loading"><div class="spinner"></div> Loading...</div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="sidebar-stack">
+                        <div class="section-card">
+                            <div class="section-header"><h3>Add Source</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="src-url">Feed URL</label>
+                                    <input id="src-url" placeholder="https://example.com/feed.xml" autocomplete="off">
+                                </div>
+                                <div class="field">
+                                    <label for="src-name">Name</label>
+                                    <input id="src-name" placeholder="Example News" autocomplete="off">
+                                </div>
+                                <div class="row2">
+                                    <div class="field">
+                                        <label for="src-route">Route tier</label>
+                                        <select id="src-route"><option value="">— none —</option></select>
+                                    </div>
+                                    <div class="field">
+                                        <label for="src-tier">Trust tier</label>
+                                        <input type="number" id="src-tier" min="1" max="5" value="2">
+                                    </div>
+                                </div>
+                                <label class="conn-check"><input type="checkbox" id="src-enabled" checked> Enabled</label>
+                                <button class="send-btn" onclick="addSource()">Add Source</button>
+                                <div class="test-result" id="src-result"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-sources -->
+
+            <!-- ═══ Scheduled (contract §5) ═══ -->
+            <div id="tab-scheduled" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Scheduled Posts</h1>
+                        <p class="subtitle">One-shot posts fired by the always-on runner (checks every 60s)</p>
+                    </div>
+                </div>
+                <div class="main-grid">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Queue</h3>
+                            <button class="filter-btn" onclick="loadScheduled()">Refresh</button>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table class="conn-table">
+                                <thead><tr><th>Channel</th><th>Payload</th><th>Run at</th><th>Mode</th><th>Status</th><th>Last run</th><th></th></tr></thead>
+                                <tbody id="sched-tbody">
+                                    <tr><td colspan="7" style="text-align:center;padding:40px;"><div class="loading"><div class="spinner"></div> Loading...</div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="sidebar-stack">
+                        <div class="section-card">
+                            <div class="section-header"><h3>Schedule a Post</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="sc-channel">Channel route</label>
+                                    <select id="sc-channel"></select>
+                                </div>
+                                <div class="field">
+                                    <label for="sc-runat">Run at</label>
+                                    <input type="datetime-local" id="sc-runat">
+                                </div>
+                                <div class="field">
+                                    <label for="sc-content">Message (&le;2000)</label>
+                                    <textarea id="sc-content" maxlength="2000" rows="4" placeholder="Plain text content…"></textarea>
+                                </div>
+                                <div class="field">
+                                    <label for="sc-embed">Embed JSON (advanced, optional)</label>
+                                    <textarea id="sc-embed" rows="3" placeholder='{"title":"…","description":"…","color":8150268}' spellcheck="false"></textarea>
+                                </div>
+                                <label class="conn-check"><input type="checkbox" id="sc-repeat"> Repeat (keep enabled after firing)</label>
+                                <button class="send-btn" onclick="createScheduled()">Schedule</button>
+                                <div class="test-result" id="sc-result"></div>
+                                <p class="lock-note">Recurring cron isn't wired yet — one-shots via run-at only for now.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-scheduled -->
+
+            <!-- ═══ Activity (contract §6) ═══ -->
+            <div id="tab-activity" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Activity</h1>
+                        <p class="subtitle">Every successful send, newest first (last 200)</p>
+                    </div>
+                </div>
+                <div class="section-card">
+                    <div class="section-header">
+                        <h3>Recent Sends</h3>
+                        <button class="filter-btn" onclick="loadActivity()">Refresh</button>
+                    </div>
+                    <div class="message-list" id="activity-list">
+                        <div class="loading"><div class="spinner"></div> Loading...</div>
+                    </div>
+                </div>
+            </div><!-- /tab-activity -->
+
+            <!-- ═══ Command Otto (contract §7) — human approves before publish ═══ -->
+            <div id="tab-otto" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Command Otto</h1>
+                        <p class="subtitle">Ask the local agent for a draft — a human reviews and approves before anything publishes</p>
+                    </div>
+                </div>
+                <div class="main-grid">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h3>Dispatch Jobs</h3>
+                            <button class="filter-btn" onclick="loadOtto()">Refresh</button>
+                        </div>
+                        <div class="message-list" id="jobs-list">
+                            <div class="loading"><div class="spinner"></div> Loading...</div>
+                        </div>
+                    </div>
+                    <div class="sidebar-stack">
+                        <div class="section-card">
+                            <div class="section-header"><h3>New Job</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="job-capability">Capability</label>
+                                    <input id="job-capability" value="content.draft_recap" autocomplete="off">
+                                </div>
+                                <div class="field">
+                                    <label for="job-project">Project</label>
+                                    <input id="job-project" value="fixer" autocomplete="off">
+                                </div>
+                                <div class="field">
+                                    <label for="job-prompt">Prompt</label>
+                                    <textarea id="job-prompt" rows="4" placeholder="Draft a weekend recap of…"></textarea>
+                                </div>
+                                <button class="send-btn" onclick="createJob()">Queue Job</button>
+                                <div class="test-result" id="job-result"></div>
+                                <p class="lock-note">Capability and project must be allow-listed on the agent side.
+                                The agent drafts; it never publishes.</p>
+                            </div>
+                        </div>
+                        <div class="section-card" id="job-review-card" style="display:none;">
+                            <div class="section-header">
+                                <h3>Review</h3>
+                                <span class="badge" id="job-review-status"></span>
+                            </div>
+                            <div id="job-review-body"></div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-otto -->
+
+            <!-- ═══ Coming soon (contract §8) — no backend, deliberately disabled ═══ -->
+            <div id="tab-soon" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Coming Soon</h1>
+                        <p class="subtitle">On the module map — no backend yet, so these stay disabled instead of faking it</p>
+                    </div>
+                </div>
+                <div class="soon-grid">
+                    <div class="section-card">
+                        <div class="section-header"><h3>Moderation &amp; Automod</h3><span class="badge soon">soon</span></div>
+                        <div class="soon-card-body">
+                            Rules, cases, and actions — warn / mute / kick flows with an audit trail.
+                            <div class="skeleton" style="width:80%;"></div>
+                            <div class="skeleton" style="width:60%;"></div>
+                            <div class="skeleton" style="width:70%;"></div>
+                            <button class="filter-btn" disabled style="margin-top:14px;opacity:0.4;cursor:not-allowed;">Configure rules</button>
+                        </div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-header"><h3>Roles &amp; Onboarding</h3><span class="badge soon">soon</span></div>
+                        <div class="soon-card-body">
+                            Welcome flows, self-roles, and reaction roles.
+                            <div class="skeleton" style="width:70%;"></div>
+                            <div class="skeleton" style="width:75%;"></div>
+                            <div class="skeleton" style="width:55%;"></div>
+                            <button class="filter-btn" disabled style="margin-top:14px;opacity:0.4;cursor:not-allowed;">Set up onboarding</button>
+                        </div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-header"><h3>Leveling &amp; XP</h3><span class="badge soon">soon</span></div>
+                        <div class="soon-card-body">
+                            Message XP, level curves, and role rewards.
+                            <div class="skeleton" style="width:65%;"></div>
+                            <div class="skeleton" style="width:80%;"></div>
+                            <div class="skeleton" style="width:50%;"></div>
+                            <button class="filter-btn" disabled style="margin-top:14px;opacity:0.4;cursor:not-allowed;">Configure leveling</button>
+                        </div>
+                    </div>
+                    <div class="section-card">
+                        <div class="section-header"><h3>Analytics</h3><span class="badge soon">soon</span></div>
+                        <div class="soon-card-body">
+                            Growth, funnel, and conversion views beyond the raw activity log.
+                            <div class="skeleton" style="width:75%;"></div>
+                            <div class="skeleton" style="width:60%;"></div>
+                            <div class="skeleton" style="width:70%;"></div>
+                            <button class="filter-btn" disabled style="margin-top:14px;opacity:0.4;cursor:not-allowed;">Open analytics</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="conn-note" style="margin-top:24px;"><span>Also pending: the <strong>RSS auto-post runner</strong>
+                (source config is live in Sources) and <strong>recurring cron schedules</strong> (one-shot posts are live in
+                Scheduled). Each becomes a wired panel when its backend lands.</span></div>
+            </div><!-- /tab-soon -->
+
             <footer style="padding: 24px 0; border-top: 1px solid var(--border); margin-top: 32px;">
                 <span class="otto-sig">built by otto · 2026-07-06</span>
             </footer>
@@ -641,7 +1188,9 @@
 
                 if (messagesRes.success) {
                     allMessages = messagesRes.messages;
-                    renderMessages(allMessages);
+                    // Respect the active filter — refreshes must not silently reset to "All"
+                    renderMessages(currentFilter === 'all' ? allMessages
+                        : allMessages.filter(m => m.intent === currentFilter));
                 }
             } catch (err) {
                 console.error('Failed to load dashboard:', err);
@@ -685,8 +1234,8 @@
             const intentHtml = analytics.by_intent.map(i => `
                 <div class="breakdown-item">
                     <div class="breakdown-label">
-                        <span class="breakdown-dot dot-${i.intent}"></span>
-                        ${formatIntent(i.intent)}
+                        <span class="breakdown-dot dot-${cssToken(i.intent)}"></span>
+                        ${escapeHtml(formatIntent(i.intent))}
                     </div>
                     <span class="breakdown-count">${i.count}</span>
                 </div>
@@ -697,8 +1246,8 @@
             const sentHtml = analytics.by_sentiment.map(s => `
                 <div class="breakdown-item">
                     <div class="breakdown-label">
-                        <span class="breakdown-dot dot-${s.sentiment}"></span>
-                        ${s.sentiment.charAt(0).toUpperCase() + s.sentiment.slice(1)}
+                        <span class="breakdown-dot dot-${cssToken(s.sentiment)}"></span>
+                        ${escapeHtml(s.sentiment.charAt(0).toUpperCase() + s.sentiment.slice(1))}
                     </div>
                     <span class="breakdown-count">${s.count}</span>
                 </div>
@@ -731,10 +1280,10 @@
                     </div>
                     <div class="message-content">${escapeHtml(msg.content.length > 300 ? msg.content.slice(0, 300) + '...' : msg.content)}</div>
                     <div class="message-tags">
-                        ${msg.intent ? `<span class="tag tag-${msg.intent}">${formatIntent(msg.intent)}</span>` : ''}
-                        ${msg.sentiment ? `<span class="tag tag-${msg.sentiment}">${msg.sentiment}</span>` : ''}
-                        <span class="status-dot ${msg.response_status}"></span>
-                        <span style="font-size:0.7rem;color:var(--text3)">${msg.response_status}</span>
+                        ${msg.intent ? `<span class="tag tag-${cssToken(msg.intent)}">${escapeHtml(formatIntent(msg.intent))}</span>` : ''}
+                        ${msg.sentiment ? `<span class="tag tag-${cssToken(msg.sentiment)}">${escapeHtml(msg.sentiment)}</span>` : ''}
+                        <span class="status-dot ${cssToken(msg.response_status)}"></span>
+                        <span style="font-size:0.7rem;color:var(--text3)">${escapeHtml(msg.response_status)}</span>
                         ${msg.confidence ? `
                             <span class="confidence-bar">
                                 <span class="bar"><span class="bar-fill" style="width:${msg.confidence * 100}%"></span></span>
@@ -761,7 +1310,7 @@
         // ── Filters ──
         function filterMessages(intent, btn) {
             currentFilter = intent;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('#tab-messages .filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
             if (intent === 'all') {
@@ -800,7 +1349,7 @@
 
                 if (data.success) {
                     resultEl.className = 'test-result success';
-                    resultEl.innerHTML = `Intent: <strong>${data.classification.intent}</strong> | Sentiment: <strong>${data.classification.sentiment}</strong> | Confidence: <strong>${(data.classification.confidence * 100).toFixed(0)}%</strong>`;
+                    resultEl.innerHTML = `Intent: <strong>${escapeHtml(data.classification.intent)}</strong> | Sentiment: <strong>${escapeHtml(data.classification.sentiment)}</strong> | Confidence: <strong>${(data.classification.confidence * 100).toFixed(0)}%</strong>`;
                     resultEl.style.display = 'block';
                     document.getElementById('test-content').value = '';
 
@@ -862,18 +1411,32 @@
         }
 
         // ── Tab switching ──
-        function switchTab(tab, el) {
+        function showTab(tab, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
             document.querySelectorAll('.sidebar-item').forEach(a => a.classList.remove('active'));
             if (el) el.classList.add('active');
+            const panel = document.getElementById('tab-' + tab);
+            if (panel) panel.classList.remove('hidden');
+            currentTab = tab;
+            if (connPollTimer) { clearInterval(connPollTimer); connPollTimer = null; }
+        }
 
-            if (tab === 'waitlist') {
-                document.getElementById('tab-waitlist').classList.remove('hidden');
-                loadWaitlist();
-            } else {
-                document.getElementById('tab-messages').classList.remove('hidden');
-                loadDashboard();
+        function switchTab(tab, el) {
+            // Community Ops tabs are gated behind the master key (contract §0).
+            if (CONN_TABS.includes(tab) && !connKey) {
+                pendingConnTab = tab;
+                showTab('lock', el);
+                return;
             }
+            showTab(tab, el);
+            if (tab === 'waitlist') loadWaitlist();
+            else if (tab === 'messages') loadDashboard();
+            else if (tab === 'channels') loadChannels();
+            else if (tab === 'composer') loadComposer();
+            else if (tab === 'sources') { populateChannelSelects(); loadSources(); }
+            else if (tab === 'scheduled') { populateChannelSelects(); loadScheduled(); }
+            else if (tab === 'activity') { loadActivity(); connPollTimer = setInterval(loadActivity, 30000); }
+            else if (tab === 'otto') { populateChannelSelects(); loadOtto(); connPollTimer = setInterval(loadOtto, 4000); }
         }
 
         // ── Waitlist ──
@@ -921,8 +1484,609 @@
             }
         }
 
+        // ═══════════════════════════════════════════════════════════════════
+        // Community Ops — /connectors/* control plane.
+        // Contract: docs/fixer-dashboard-endpoint-contract.md (only WIRED routes).
+        // Auth: master key held in this tab's sessionStorage, sent as a Bearer
+        // header on every call. Never rendered back, never logged.
+        // ═══════════════════════════════════════════════════════════════════
+
+        const CONN_TABS = ['channels', 'composer', 'sources', 'scheduled', 'activity', 'otto'];
+        let connKey = sessionStorage.getItem('hs_admin_key') || '';
+        let connState = { channels: [], sources: [], scheduled: [] };
+        let pendingConnTab = 'channels';
+        let currentTab = 'messages';
+        let connPollTimer = null;
+
+        function escapeAttr(s) {
+            return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        // For values interpolated into class names — strip anything that could
+        // break out of the attribute (classifier output is not a trusted enum).
+        function cssToken(s) {
+            return String(s == null ? '' : s).replace(/[^\w-]/g, '');
+        }
+
+        function showResult(id, cls, msg) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className = 'test-result ' + cls;
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+        function hideResult(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.className = 'test-result';
+            el.style.display = 'none';
+        }
+
+        async function connApi(path, opts) {
+            opts = opts || {};
+            const headers = Object.assign({}, opts.headers || {});
+            headers['Authorization'] = 'Bearer ' + connKey;
+            if (opts.body) headers['Content-Type'] = 'application/json';
+            const res = await fetch(path, Object.assign({}, opts, { headers }));
+            if (res.status === 401) {
+                connSignOut(true);
+                throw new Error('unauthorized');
+            }
+            let data = null;
+            try { data = await res.json(); } catch (e) { /* non-JSON body */ }
+            if (!res.ok) {
+                const err = new Error((data && data.error) || ('HTTP ' + res.status));
+                err.status = res.status;
+                throw err;
+            }
+            return data;
+        }
+
+        function connSignOut(expired) {
+            connKey = '';
+            sessionStorage.removeItem('hs_admin_key');
+            document.getElementById('nav-signout').style.display = 'none';
+            if (CONN_TABS.includes(currentTab)) pendingConnTab = currentTab;
+            if (CONN_TABS.includes(currentTab) || currentTab === 'lock') {
+                showTab('lock', document.getElementById('nav-' + pendingConnTab));
+            }
+            if (expired) showResult('lock-result', 'error', 'Key rejected (401) — sign in again.');
+        }
+
+        async function connUnlock() {
+            const input = document.getElementById('lock-key');
+            const key = input.value.trim();
+            if (!key) return;
+            const btn = document.getElementById('lock-btn');
+            btn.disabled = true; btn.textContent = 'Checking…';
+            connKey = key;
+            try {
+                connState = await connApi('/connectors/state');
+                sessionStorage.setItem('hs_admin_key', key);
+                input.value = '';
+                hideResult('lock-result');
+                document.getElementById('nav-signout').style.display = '';
+                switchTab(pendingConnTab, document.getElementById('nav-' + pendingConnTab));
+            } catch (err) {
+                connKey = '';
+                sessionStorage.removeItem('hs_admin_key');
+                showResult('lock-result', 'error', err.message === 'unauthorized'
+                    ? 'That key was rejected (401).' : 'Could not sign in: ' + err.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Unlock';
+            }
+        }
+
+        function channelOptions(includeNone) {
+            const enabled = (connState.channels || []).filter(c => c.enabled);
+            const opts = enabled.map(c =>
+                `<option value="${escapeAttr(c.tier)}">${escapeHtml(c.label || c.tier)} (${escapeHtml(c.tier)})</option>`).join('');
+            if (includeNone) return '<option value="">— none —</option>' + opts;
+            return opts || '<option value="">No enabled routes — add one in Channels</option>';
+        }
+
+        async function populateChannelSelects() {
+            try { connState.channels = await connApi('/connectors/channels'); } catch (e) { return; }
+            [['em-channel', false], ['sc-channel', false], ['src-route', true]].forEach(([id, none]) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const prev = el.value;
+                el.innerHTML = channelOptions(none);
+                if (prev) el.value = prev;
+                // If the remembered route was deleted/disabled, fall back to the
+                // first option instead of a blank select.
+                if (el.selectedIndex === -1) el.selectedIndex = 0;
+            });
+        }
+
+        // ── Channels (§2) ──
+        async function loadChannels() {
+            const tbody = document.getElementById('channels-tbody');
+            try {
+                const rows = await connApi('/connectors/channels');
+                connState.channels = rows;
+                if (!rows.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3);">No routes yet. Paste a Discord webhook URL on the right to add the first one.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map((ch, i) => `
+                    <tr>
+                        <td class="mono" style="color:var(--text);">${escapeHtml(ch.tier)}</td>
+                        <td>${escapeHtml(ch.label || '')}</td>
+                        <td class="mono">${escapeHtml(ch.webhook_url || '')}</td>
+                        <td><span class="badge ${ch.enabled ? 'on' : 'off'}">${ch.enabled ? 'enabled' : 'disabled'}</span></td>
+                        <td style="color:var(--text3);font-size:0.78rem;">${timeAgo(ch.updated_at)}</td>
+                        <td><button class="icon-btn danger" onclick="deleteChannel(${i})">Delete</button></td>
+                    </tr>`).join('');
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--discover);">${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        async function saveChannel() {
+            const tier = document.getElementById('ch-tier').value.trim();
+            const label = document.getElementById('ch-label').value.trim();
+            const webhook = document.getElementById('ch-webhook').value.trim();
+            if (!tier || !webhook) { showResult('ch-result', 'error', 'Tier and webhook URL are both required.'); return; }
+            try {
+                await connApi('/connectors/channels', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        tier, webhook_url: webhook,
+                        label: label || undefined,
+                        enabled: document.getElementById('ch-enabled').checked,
+                    }),
+                });
+                document.getElementById('ch-tier').value = '';
+                document.getElementById('ch-label').value = '';
+                document.getElementById('ch-webhook').value = '';
+                showResult('ch-result', 'success', 'Route "' + tier + '" saved.');
+                loadChannels();
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                showResult('ch-result', 'error', 'Save failed: ' + err.message);
+            }
+        }
+
+        async function deleteChannel(i) {
+            const ch = connState.channels[i];
+            if (!ch) return;
+            if (!confirm('Delete route "' + ch.tier + '"? Sends to it will fail until it is re-added.')) return;
+            try {
+                await connApi('/connectors/channels/' + encodeURIComponent(ch.tier), { method: 'DELETE' });
+                loadChannels();
+            } catch (err) { if (err.message !== 'unauthorized') alert('Delete failed: ' + err.message); }
+        }
+
+        // ── Composer (§3) ──
+        let composeMode = 'embed';
+        let embedFields = [];
+
+        function setComposeMode(mode) {
+            composeMode = mode;
+            document.getElementById('mode-embed').classList.toggle('active', mode === 'embed');
+            document.getElementById('mode-plain').classList.toggle('active', mode === 'plain');
+            document.getElementById('compose-embed-form').style.display = mode === 'embed' ? '' : 'none';
+            document.getElementById('compose-plain-form').style.display = mode === 'plain' ? '' : 'none';
+            renderEmbedPreview();
+        }
+
+        async function loadComposer() {
+            await populateChannelSelects();
+            if (!embedFields.length) renderEmbedFields();
+            renderEmbedPreview();
+        }
+
+        function addEmbedField() {
+            if (embedFields.length >= 10) return;
+            embedFields.push({ name: '', value: '', inline: false });
+            renderEmbedFields();
+        }
+        function removeEmbedField(i) {
+            embedFields.splice(i, 1);
+            renderEmbedFields();
+            renderEmbedPreview();
+        }
+        function updateEmbedField(i, key, val) {
+            if (embedFields[i]) { embedFields[i][key] = val; renderEmbedPreview(); }
+        }
+        function renderEmbedFields() {
+            document.getElementById('em-fields').innerHTML = embedFields.map((f, i) => `
+                <div class="cf-row">
+                    <input placeholder="Name" maxlength="256" value="${escapeAttr(f.name)}" oninput="updateEmbedField(${i}, 'name', this.value)">
+                    <input placeholder="Value" maxlength="1024" value="${escapeAttr(f.value)}" oninput="updateEmbedField(${i}, 'value', this.value)">
+                    <label class="conn-check"><input type="checkbox" ${f.inline ? 'checked' : ''} onchange="updateEmbedField(${i}, 'inline', this.checked)"> inline</label>
+                    <button class="icon-btn danger" onclick="removeEmbedField(${i})">&times;</button>
+                </div>`).join('');
+        }
+
+        function buildEmbed() {
+            const embed = {};
+            const title = document.getElementById('em-title').value.trim();
+            const desc = document.getElementById('em-desc').value;
+            const url = document.getElementById('em-url').value.trim();
+            const footer = document.getElementById('em-footer').value.trim();
+            if (title) embed.title = title.slice(0, 256);
+            if (desc.trim()) embed.description = desc.slice(0, 4096);
+            if (url) embed.url = url;
+            embed.color = parseInt(document.getElementById('em-color').value.slice(1), 16); // decimal, per contract
+            const fields = embedFields
+                .map(f => ({ name: String(f.name).trim(), value: String(f.value).trim(), inline: !!f.inline }))
+                .filter(f => f.name && f.value)
+                .slice(0, 10);
+            if (fields.length) embed.fields = fields;
+            if (footer) embed.footer = { text: footer };
+            if (document.getElementById('em-timestamp').checked) embed.timestamp = new Date().toISOString();
+            // Color alone isn't content — require something visible.
+            return (embed.title || embed.description || embed.fields || embed.footer) ? embed : null;
+        }
+
+        function renderEmbedPreview() {
+            const box = document.getElementById('embed-preview');
+            if (composeMode === 'plain') {
+                const content = document.getElementById('em-content').value;
+                box.style.borderLeftColor = 'var(--border)';
+                box.innerHTML = content.trim()
+                    ? `<div class="ep-desc">${escapeHtml(content.slice(0, 2000))}</div>`
+                    : '<span class="ep-empty">Nothing to preview yet</span>';
+                return;
+            }
+            const embed = buildEmbed();
+            box.style.borderLeftColor = document.getElementById('em-color').value;
+            if (!embed) { box.innerHTML = '<span class="ep-empty">Nothing to preview yet</span>'; return; }
+            let html = '';
+            if (embed.title) html += `<div class="ep-title">${embed.url ? '<a>' + escapeHtml(embed.title) + '</a>' : escapeHtml(embed.title)}</div>`;
+            if (embed.description) html += `<div class="ep-desc">${escapeHtml(embed.description)}</div>`;
+            if (embed.fields) html += `<div class="ep-fields">${embed.fields.map(f =>
+                `<div class="ep-field${f.inline ? ' inline' : ''}"><div class="ep-field-name">${escapeHtml(f.name)}</div><div>${escapeHtml(f.value)}</div></div>`).join('')}</div>`;
+            const footerBits = [];
+            if (embed.footer) footerBits.push(escapeHtml(embed.footer.text));
+            if (embed.timestamp) footerBits.push('now');
+            if (footerBits.length) html += `<div class="ep-footer">${footerBits.join(' &bull; ')}</div>`;
+            box.innerHTML = html;
+        }
+
+        async function sendComposed() {
+            const channel_key = document.getElementById('em-channel').value;
+            if (!channel_key) { showResult('em-result', 'error', 'Pick a channel route first (add one in Channels).'); return; }
+            const body = { channel_key };
+            if (composeMode === 'plain') {
+                const content = document.getElementById('em-content').value.trim();
+                if (!content) { showResult('em-result', 'error', 'Write a message first.'); return; }
+                body.content = content.slice(0, 2000);
+            } else {
+                const embed = buildEmbed();
+                if (!embed) { showResult('em-result', 'error', 'Give the embed a title, description, field, or footer first.'); return; }
+                body.embed = embed;
+            }
+            const btn = document.getElementById('em-send-btn');
+            btn.disabled = true; btn.textContent = 'Sending…';
+            try {
+                await connApi('/connectors/embed/send', { method: 'POST', body: JSON.stringify(body) });
+                showResult('em-result', 'success', 'Sent to "' + channel_key + '".');
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                const hint = err.status === 404 ? ' (route not configured or disabled)'
+                    : err.status === 502 ? ' (Discord rejected the send)' : '';
+                showResult('em-result', 'error', 'Send failed: ' + err.message + hint);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Send Now';
+            }
+        }
+
+        // ── Sources (§4) ──
+        async function loadSources() {
+            const tbody = document.getElementById('sources-tbody');
+            try {
+                const rows = await connApi('/connectors/sources');
+                connState.sources = rows;
+                if (!rows.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3);">No sources yet.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map((s, i) => `
+                    <tr>
+                        <td style="color:var(--text);">${escapeHtml(s.name || '')}</td>
+                        <td class="mono" style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(s.url)}</td>
+                        <td class="mono">${escapeHtml(s.route_tier || '—')}</td>
+                        <td class="mono">T${escapeHtml(String(s.source_tier))}</td>
+                        <td><span class="badge ${s.enabled ? 'on' : 'off'}">${s.enabled ? 'enabled' : 'disabled'}</span></td>
+                        <td style="color:var(--text3);font-size:0.78rem;">${timeAgo(s.added_at)}</td>
+                        <td><button class="icon-btn danger" onclick="deleteSource(${i})">Delete</button></td>
+                    </tr>`).join('');
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--discover);">${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        async function addSource() {
+            const url = document.getElementById('src-url').value.trim();
+            if (!url) { showResult('src-result', 'error', 'Feed URL is required.'); return; }
+            try {
+                await connApi('/connectors/sources', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        url,
+                        name: document.getElementById('src-name').value.trim() || undefined,
+                        route_tier: document.getElementById('src-route').value || undefined,
+                        source_tier: parseInt(document.getElementById('src-tier').value, 10) || 2,
+                        enabled: document.getElementById('src-enabled').checked,
+                    }),
+                });
+                document.getElementById('src-url').value = '';
+                document.getElementById('src-name').value = '';
+                showResult('src-result', 'success', 'Source added.');
+                loadSources();
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                showResult('src-result', 'error', 'Add failed: ' + err.message);
+            }
+        }
+
+        async function deleteSource(i) {
+            const s = connState.sources[i];
+            if (!s) return;
+            if (!confirm('Delete source "' + (s.name || s.url) + '"?')) return;
+            try {
+                await connApi('/connectors/sources/' + encodeURIComponent(s.id), { method: 'DELETE' });
+                loadSources();
+            } catch (err) { if (err.message !== 'unauthorized') alert('Delete failed: ' + err.message); }
+        }
+
+        // ── Scheduled (§5) ──
+        async function loadScheduled() {
+            const tbody = document.getElementById('sched-tbody');
+            try {
+                const rows = await connApi('/connectors/scheduled');
+                connState.scheduled = rows;
+                if (!rows.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3);">Nothing scheduled. The runner checks for due posts every 60s.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = rows.map((p, i) => {
+                    const payload = p.payload || {};
+                    const summary = payload.content ? payload.content.slice(0, 60)
+                        : (payload.embed || payload.embeds) ? '[embed]' : '—';
+                    const runAt = p.run_at ? new Date(p.run_at).toLocaleString()
+                        : (p.cron ? 'cron: ' + p.cron : '—');
+                    const status = p.last_run ? 'fired' : (p.enabled ? 'armed' : 'disabled');
+                    return `<tr>
+                        <td class="mono" style="color:var(--text);">${escapeHtml(p.channel_key)}</td>
+                        <td>${escapeHtml(summary)}</td>
+                        <td style="font-size:0.8rem;">${escapeHtml(runAt)}</td>
+                        <td>${p.repeat ? '<span class="badge kind">repeat</span>' : '<span style="color:var(--text3);">one-shot</span>'}</td>
+                        <td><span class="badge ${status === 'armed' ? 'on' : 'off'}">${status}</span></td>
+                        <td style="color:var(--text3);font-size:0.78rem;">${p.last_run ? timeAgo(p.last_run) : '—'}</td>
+                        <td><button class="icon-btn danger" onclick="deleteScheduled(${i})">Delete</button></td>
+                    </tr>`;
+                }).join('');
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--discover);">${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        async function createScheduled() {
+            const channel_key = document.getElementById('sc-channel').value;
+            const runAtRaw = document.getElementById('sc-runat').value;
+            const content = document.getElementById('sc-content').value.trim();
+            const embedRaw = document.getElementById('sc-embed').value.trim();
+            if (!channel_key) { showResult('sc-result', 'error', 'Pick a channel route first.'); return; }
+            if (!runAtRaw) { showResult('sc-result', 'error', 'Pick a run time.'); return; }
+            if (!content && !embedRaw) { showResult('sc-result', 'error', 'Give the post content or embed JSON.'); return; }
+            const payload = {};
+            if (content) payload.content = content.slice(0, 2000);
+            if (embedRaw) {
+                try { payload.embed = JSON.parse(embedRaw); }
+                catch (e) { showResult('sc-result', 'error', 'Embed JSON does not parse: ' + e.message); return; }
+            }
+            const runAt = new Date(runAtRaw);
+            if (runAt <= new Date() && !confirm('That time is in the past — it will fire on the next runner tick (within 60s). Schedule anyway?')) return;
+            try {
+                await connApi('/connectors/scheduled', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        channel_key, payload,
+                        run_at: runAt.toISOString(),
+                        repeat: document.getElementById('sc-repeat').checked,
+                    }),
+                });
+                document.getElementById('sc-content').value = '';
+                document.getElementById('sc-embed').value = '';
+                showResult('sc-result', 'success', 'Scheduled — fires within 60s of run time.');
+                loadScheduled();
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                showResult('sc-result', 'error', 'Schedule failed: ' + err.message);
+            }
+        }
+
+        async function deleteScheduled(i) {
+            const p = connState.scheduled[i];
+            if (!p) return;
+            if (!confirm('Delete this scheduled post for "' + p.channel_key + '"?')) return;
+            try {
+                await connApi('/connectors/scheduled/' + encodeURIComponent(p.id), { method: 'DELETE' });
+                loadScheduled();
+            } catch (err) { if (err.message !== 'unauthorized') alert('Delete failed: ' + err.message); }
+        }
+
+        // ── Activity (§6) ──
+        async function loadActivity() {
+            const list = document.getElementById('activity-list');
+            try {
+                const rows = await connApi('/connectors/log');
+                if (!rows.length) {
+                    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F4E1;</div><h3>No sends yet</h3><p>Every successful send — composer, scheduled, or approved dispatch — lands here.</p></div>';
+                    return;
+                }
+                list.innerHTML = rows.map(r => `
+                    <div class="message-item">
+                        <div class="message-meta">
+                            <span class="badge kind">${escapeHtml(r.kind || 'send')}</span>
+                            <span class="message-channel">${escapeHtml(r.guild_id || 'default')}</span>
+                            <span class="message-time">${timeAgo(r.posted_at)}</span>
+                        </div>
+                        <div class="mono" style="font-size:0.72rem;color:var(--text3);word-break:break-all;">${escapeHtml(r.dedup_key)}</div>
+                    </div>`).join('');
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                list.innerHTML = `<div class="empty-state"><h3>Could not load activity</h3><p>${escapeHtml(err.message)}</p></div>`;
+            }
+        }
+
+        // ── Command Otto (§7) — draft → review → human approve → publish ──
+        let ottoJobs = [];
+        let selectedJobId = null;
+        let lastReviewSnapshot = '';
+
+        async function loadOtto() {
+            const list = document.getElementById('jobs-list');
+            try {
+                ottoJobs = await connApi('/connectors/dispatch');
+                if (!ottoJobs.length) {
+                    list.innerHTML = '<div class="empty-state"><div class="icon">&#x1F9ED;</div><h3>No jobs yet</h3><p>Queue a job on the right — the local agent drafts it, you approve it.</p></div>';
+                } else {
+                    list.innerHTML = ottoJobs.map(j => `
+                        <div class="job-item ${j.id === selectedJobId ? 'selected' : ''}" onclick="openJob('${escapeAttr(String(j.id))}')">
+                            <div class="job-meta">
+                                <span class="job-cap">${escapeHtml(j.capability)}</span>
+                                <span class="badge ${escapeAttr(String(j.status))}">${escapeHtml(String(j.status).replace(/_/g, ' '))}</span>
+                                <span class="job-time">${timeAgo(j.created_at)}</span>
+                            </div>
+                            <div class="mono" style="font-size:0.72rem;color:var(--text3);margin-top:4px;">#${escapeHtml(String(j.id).slice(0, 8))} &middot; by ${escapeHtml(j.created_by || '—')}</div>
+                        </div>`).join('');
+                }
+                if (selectedJobId) refreshJobReview();
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                list.innerHTML = `<div class="empty-state"><h3>Could not load jobs</h3><p>${escapeHtml(err.message)}</p></div>`;
+            }
+        }
+
+        function openJob(id) {
+            selectedJobId = id;
+            lastReviewSnapshot = '';
+            // Clear the card immediately so a previously rendered draft can't be
+            // approved while the newly selected job is still loading.
+            const card = document.getElementById('job-review-card');
+            card.style.display = '';
+            const badge = document.getElementById('job-review-status');
+            badge.className = 'badge';
+            badge.textContent = '';
+            document.getElementById('job-review-body').innerHTML =
+                '<div class="loading"><div class="spinner"></div></div>';
+            loadOtto();
+        }
+
+        async function refreshJobReview() {
+            const card = document.getElementById('job-review-card');
+            const body = document.getElementById('job-review-body');
+            const badge = document.getElementById('job-review-status');
+            if (!selectedJobId) { card.style.display = 'none'; return; }
+            const reqId = selectedJobId;
+            let job;
+            try {
+                job = await connApi('/connectors/dispatch/' + encodeURIComponent(reqId));
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                if (selectedJobId !== reqId) return; // selection changed mid-flight
+                card.style.display = '';
+                badge.className = 'badge failed'; badge.textContent = 'error';
+                body.innerHTML = `<div class="conn-form" style="color:var(--discover);font-size:0.85rem;">${escapeHtml(err.message)}</div>`;
+                // Force a re-render on the next successful poll so a transient
+                // error can't permanently hide the Approve UI.
+                lastReviewSnapshot = '';
+                return;
+            }
+            // Drop stale responses — never render (or allow approving) a job other
+            // than the one currently selected.
+            if (selectedJobId !== reqId || String(job.id) !== String(reqId)) return;
+            // Only re-render when the status changes — otherwise polling would wipe
+            // the operator's channel selection mid-review.
+            const snapshot = job.id + ':' + job.status;
+            if (snapshot === lastReviewSnapshot) return;
+            lastReviewSnapshot = snapshot;
+            card.style.display = '';
+            badge.className = 'badge ' + escapeAttr(String(job.status));
+            badge.textContent = String(job.status).replace(/_/g, ' ');
+            const prompt = job.payload && job.payload.prompt;
+            let html = '<div class="conn-form" style="padding-bottom:8px;">';
+            html += `<div class="field"><label>Job</label><div class="mono" style="color:var(--text3);">#${escapeHtml(String(job.id).slice(0, 8))} &middot; ${escapeHtml(job.capability)}</div></div>`;
+            if (prompt) html += `<div class="field"><label>Prompt</label><div style="font-size:0.83rem;color:var(--text2);line-height:1.5;">${escapeHtml(String(prompt).slice(0, 500))}</div></div>`;
+            html += '</div>';
+            if (['queued', 'claimed', 'running'].includes(job.status)) {
+                html += '<div class="conn-form" style="padding-top:0;color:var(--text3);font-size:0.85rem;">Waiting on the local agent <span class="thinking-dot"></span><span class="thinking-dot"></span><span class="thinking-dot"></span></div>';
+            } else if (job.status === 'failed') {
+                html += `<div class="conn-form" style="padding-top:0;color:var(--discover);font-size:0.85rem;">${escapeHtml(job.error || 'Job failed on the agent side.')}</div>`;
+            } else if (job.status === 'awaiting_approval') {
+                const out = job.result && job.result.output;
+                const text = typeof out === 'string' ? out : JSON.stringify(out, null, 2);
+                html += '<div class="ai-response-label" style="padding:0 20px;margin-bottom:6px;">Drafted output — review before publish</div>';
+                html += `<div class="draft-box">${escapeHtml(text || '(empty draft)')}</div>`;
+                html += `<div class="conn-form" style="padding-top:0;">
+                    <div class="field"><label for="job-channel">Publish to route</label><select id="job-channel">${channelOptions(false)}</select></div>
+                    <button class="send-btn" onclick="approveJob()">Approve &amp; Publish</button>
+                    <div class="test-result" id="approve-result"></div>
+                    <p class="lock-note">Publishing is your click — the agent can never send this itself.</p>
+                </div>`;
+            } else if (job.status === 'succeeded') {
+                html += '<div class="conn-form" style="padding-top:0;color:var(--ship);font-size:0.85rem;">Published. The send is on the Activity tab.</div>';
+            }
+            body.innerHTML = html;
+        }
+
+        async function createJob() {
+            const capability = document.getElementById('job-capability').value.trim();
+            const prompt = document.getElementById('job-prompt').value.trim();
+            const project = document.getElementById('job-project').value.trim();
+            if (!capability) { showResult('job-result', 'error', 'Capability is required.'); return; }
+            if (!prompt) { showResult('job-result', 'error', 'Write a prompt for the agent.'); return; }
+            try {
+                const row = await connApi('/connectors/dispatch', {
+                    method: 'POST',
+                    body: JSON.stringify({ capability, payload: { prompt, project: project || undefined } }),
+                });
+                showResult('job-result', 'success', 'Job queued (#' + String(row.id).slice(0, 8) + '). Watching for the draft…');
+                document.getElementById('job-prompt').value = '';
+                selectedJobId = row.id;
+                lastReviewSnapshot = '';
+                loadOtto();
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                showResult('job-result', 'error', 'Queue failed: ' + err.message);
+            }
+        }
+
+        async function approveJob() {
+            const sel = document.getElementById('job-channel');
+            const channel_key = sel && sel.value;
+            if (!channel_key) { showResult('approve-result', 'error', 'Pick a channel route first (add one in Channels).'); return; }
+            if (!confirm('Publish draft #' + String(selectedJobId).slice(0, 8) + ' to "' + channel_key + '" on Discord?')) return;
+            try {
+                const out = await connApi('/connectors/dispatch/' + encodeURIComponent(selectedJobId) + '/approve', {
+                    method: 'POST',
+                    body: JSON.stringify({ channel_key }),
+                });
+                showResult('approve-result', 'success', out && out.already ? 'Already published — no double-post.' : 'Published.');
+                lastReviewSnapshot = '';
+                loadOtto();
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                const hint = err.status === 502 ? ' The job stays un-published — fix the route and approve again.' : '';
+                showResult('approve-result', 'error', 'Publish failed: ' + err.message + hint);
+            }
+        }
+
         // ── Init ──
         loadDashboard();
+        if (connKey) document.getElementById('nav-signout').style.display = '';
+        document.getElementById('lock-key').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') connUnlock();
+        });
 
         // Auto-refresh every 30 seconds
         setInterval(function() {
