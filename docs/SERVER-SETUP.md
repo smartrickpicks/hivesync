@@ -11,12 +11,18 @@ The auto-poster (`api/cron/publish.js`) is live and gated (verified: `/api/cron/
 → 401). It reads `picks_data.json`, routes by tier, posts webhook embeds, dedups. It just
 has no webhook + no trigger yet.
 
-1. **Discord:** make a webhook on your picks channel → copy the URL.
-2. **Vercel (picks-chat project) → Settings → Env:** set
-   - `DISCORD_WEBHOOK_ALL` = that webhook URL  (or per-tier: `DISCORD_WEBHOOK_TOP` /
-     `_QUALIFIED` / `_WATCH` / `_PASS`)
+1. **Discord:** make a webhook on EACH quality channel → copy each URL.
+2. **Vercel (picks-chat project) → Settings → Env:** set the PER-TIER webhooks so picks
+   route by quality (do NOT use `DISCORD_WEBHOOK_ALL` — that's the single-channel fallback):
+   - `DISCORD_WEBHOOK_TOP`       ← qualified + grade A/A-  (top plays)
+   - `DISCORD_WEBHOOK_QUALIFIED` ← qualified or lean (B/C)
+   - `DISCORD_WEBHOOK_WATCH`     ← watch / wait / developing
+   - `DISCORD_WEBHOOK_PASS`      ← pass / model-alert / closed
    - `CRON_SECRET` = a random string (if not already set)
    - redeploy picks-chat so the env takes.
+   **Routing lives in `publish.js` `tierOf()` — 4 buckets.** If your channel taxonomy is
+   MORE granular (separate lean / wait / model-alert channels), `tierOf` + the WEBHOOKS map
+   need a small extend (~10 lines) to match — flag Otto with your channel list.
 3. **Pi:** after each `make_snapshot`, add one line to the cron script:
    `curl -s -H "Authorization: Bearer $CRON_SECRET" https://picks-chat.vercel.app/api/cron/publish`
    (Pi is always-on → dodges Vercel's daily-cron limit; posts every grade cycle.)
