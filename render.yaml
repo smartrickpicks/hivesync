@@ -2,17 +2,24 @@ services:
   - type: web
     runtime: node
     name: app
-    # ALWAYS-ON — required. The discord.js gateway (bot.js) runs inside this web
-    # process; a sleep-eligible plan would drop the websocket on idle spin-down and
-    # kill every interaction until cold start. Do NOT downgrade below starter while
-    # the bot owns interactions (WB-1 / Option C).
-    plan: starter
-    buildCommand: npm install
+    # STAGED PLAN:
+    #   free    — fine NOW. Picks post via the Composer WEBHOOK path (connectors.js
+    #             sendToChannel → fetch(webhook_url)), which needs no gateway/always-on;
+    #             it fires whenever the dashboard is awake. Live message ingest +
+    #             onboarding are unreliable on free (the web process sleeps → the
+    #             discord.js gateway drops), but those aren't needed to seed picks.
+    #   starter — REQUIRED before WB-1a gateway interactions go live (a sleeping plan
+    #             drops the websocket). Upgrade when there's revenue / WB-1a ships.
+    plan: free
+    # Run migrations on deploy or the Channels/Composer/Scheduled tables won't exist.
+    buildCommand: npm install && npm run migrate
     startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL         # Postgres (Neon free tier) — REQUIRED. sync:false = set in Render UI.
+        sync: false
       - key: DISCORD_BOT_TOKEN
         sync: false
       - key: DISCORD_WEBHOOK_URL
