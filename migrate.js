@@ -25,7 +25,10 @@ const fs = require('fs');
 const path = require('path');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  // Match server.js — Neon (and most hosted PG) require SSL; localhost doesn't.
+  // Without this the build-time migration fails to connect on Neon.
+  ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false }
 });
 
 async function migrate() {
