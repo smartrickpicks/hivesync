@@ -1531,14 +1531,16 @@ function pickEmbed(g, bucket) {
 
 let picksRouterBusy = false;
 async function pollPicks() {
-  if (picksRouterBusy) return;
+  if (picksRouterBusy) return { ok: false, busy: true };
   picksRouterBusy = true;
+  let posted = 0, skipped = 0;
+  const byGrade = {};
   try {
     const { rows: routes } = await pool.query(
       `select tier from discord_channels where guild_id = 'default' and enabled and tier = any($1)`,
       [[...GRADE_TIERS, 'all']]
     );
-    if (!routes.length) return; // nothing wired — router idle
+    if (!routes.length) return { ok: true, idle: 'no channels wired', posted, skipped }; // nothing wired — router idle
     const wired = new Set(routes.map((r) => r.tier));
 
     let feed;
@@ -1546,11 +1548,12 @@ async function pollPicks() {
       const r = await fetch(`${PICKS_FEED_URL}?t=${Date.now()}`, { cache: 'no-store' });
       feed = await r.json();
     } catch (_) {
-      return; // transient feed failure — next tick retries
+      return { ok: false, error: 'feed fetch failed', posted, skipped }; // transient — next tick/trigger retries
     }
 
     const { sendToChannel } = require('./connectors');
-    for (const g of Array.isArray(feed.games) ? feed.games : []) {
+    const games = Array.isArray(feed.games) ? feed.games : [];
+    for (const g of games) {
       const a = g.asmt;
       if (!a || !a.grade) continue;
       const bucket = String(a.grade).trim().toUpperCase()[0];
@@ -1567,22 +1570,45 @@ async function pollPicks() {
            on conflict (dedup_key) do nothing returning dedup_key`,
           [dedupKey, `pick-${tier}`]
         );
-        if (!ins.rows.length) continue;
+        if (!ins.rows.length) { skipped++; continue; }
         const out = await sendToChannel(pool, 'default', tier, { embed: pickEmbed(g, bucket) }, { logKey: dedupKey, kind: `pick-${tier}` });
         if (!out.ok) {
           await pool.query(`delete from discord_publish_log where dedup_key = $1`, [dedupKey]);
           console.error(`[picks router] ${tier} send failed:`, out.error);
+        } else {
+          posted++; byGrade[tier] = (byGrade[tier] || 0) + 1;
         }
       }
     }
+    return { ok: true, candidates: games.length, posted, skipped, byGrade };
   } catch (e) {
     console.error('[picks router]', e.message);
+    return { ok: false, error: e.message, posted, skipped };
   } finally {
     picksRouterBusy = false;
   }
 }
 setInterval(pollPicks, 5 * 60 * 1000);
 setTimeout(pollPicks, 15 * 1000); // first pass shortly after boot
+
+// Pi/cron trigger — the Fixer regrades every ~90min; after each make_snapshot the
+// Pi curls this so posting never depends on the free-tier instance staying awake
+// (the request itself wakes it). CRON_SECRET-gated, fail-closed. Reuses pollPicks
+// so routing/dedup/embed are identical to the background poller; safe to call any
+// number of times (dedup makes re-runs no-ops).
+app.post('/api/picks/consume', async (req, res) => {
+  const auth = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  if (!process.env.CRON_SECRET || auth !== process.env.CRON_SECRET) {
+    return res.status(401).json({ ok: false, error: 'unauthorized' });
+  }
+  try {
+    const out = await pollPicks();
+    res.json(out);
+  } catch (e) {
+    console.error('[picks/consume]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
 
 // Send a message as the bot to any channel in the guild. Same safety floor as
 // every other send path: mass mentions are stripped, no override.
