@@ -267,3 +267,53 @@ can start fresh.
 
 Everything else in WB-1 stands. Gate stays deployed (dormant under A1a, active-relay
 under A1b) as the documented rollback.
+
+---
+
+## AMENDMENT A2 (2026-07-20) — WB-1a / WB-1b split + the near-term output goal
+
+**Output goal (Zac):** launch the dashboard live, have it interact with Discord, and
+begin seeding the Fixer picks into the guild starting tomorrow.
+
+**Reframe — two independent tracks (grounded: Channels/Composer/Sources/Scheduled +
+`connectors.js` are already SHIPPED, `069b71f`/`40c42b1`):**
+
+- **TRACK 1 — Picks seeding (NO WB-1 needed, do first).** Deploy hivesync with
+  `plan: starter` (dashboard live + always-on) → Setup tab (token + guild) → Channels +
+  Composer + Scheduled to post the Fixer picks to a channel. Day-one can be manual-paste;
+  auto-wiring the Fixer feed (`picks_data.json` from `fixer-data`) as a Source is a small
+  follow-up (`fixer_feed` source type → compose → scheduled post). This is the "tomorrow"
+  deliverable and it rides existing rails.
+- **TRACK 2 — WB-1a/1b (the interaction layer, the actual build below).**
+
+### WB-1a — Interaction RUNTIME (testable, ships before any builder UI)
+Scope: everything needed for a member to walk a live flow, seeded not UI-built.
+- A1a cutover: `/link` on its own Discord app; the hivesync-bot app's Interactions
+  Endpoint URL cleared (Option C) so its interactions hit the gateway.
+- `Events.InteractionCreate` handler added to `bot.js`, routing button/select/slash
+  interactions to the engine.
+- The engine (§3 in full): run lifecycle, private threads, advance/finish, failure
+  posture, **all §5 safety fences** (identity-from-interaction, author-gate on runs,
+  triple-fenced role grants checked AT EXECUTION, mention lock, deterministic).
+- Data model (§1) migrations (`discord_workflows`, `discord_workflow_runs`) + the
+  abandoned-run unlock (A1.4).
+- The `#start` "meet Otto" flow **seeded via migration/JSON** (the acceptance test) —
+  buttons question + multi-select + role grant + finish + staff summary.
+- Ported gate commands (`/poll`, `/otto`, `beam_start`) answering from the gateway.
+- **WB-1a output:** dashboard live, bot interacting — a member clicks `#start` → private
+  thread → questions → role → finish, end-to-end on The Brain Brigade. Testable with zero
+  builder UI.
+
+### WB-1b — Builder UI + slash-command registry (edit flows/commands without code)
+- "Workflows" tab (list / card-stack editor / live preview / **test-mode "Run as me"**)
+  replacing the Roles & Onboarding stub (§4).
+- Publish/pause; publish compiles+validates the graph and posts/edits the trigger message.
+- **Slash-command registry** (A1.3): register/edit/delete guild commands, bind to
+  workflows, `slash_command` trigger; single-command ops only (never bulk overwrite);
+  `/link` read-only (its own app).
+- **WB-1b output:** Zac builds and edits onboarding flows and slash commands from the
+  dashboard, no code.
+
+Build order: **WB-1a first** (Fable, then author-excluded audit, then Zac deploys +
+A1a portal split → test), then **WB-1b**. Track 1 (picks) proceeds in parallel and
+depends on neither.
