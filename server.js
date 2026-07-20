@@ -1507,16 +1507,25 @@ const GRADE_COLORS = { A: 0x1fbe6b, B: 0x00d1ff, C: 0xeab308, D: 0xf97316, F: 0x
 function pickEmbed(g, bucket) {
   const a = g.asmt || {};
   const vs = a.value_side || {};
+  const ls = a.likely_side || {};
   const am = (n) => (n == null ? '—' : n > 0 ? `+${n}` : `${n}`);
+  const pct = (p) => (p == null ? '—' : `${(p * 100).toFixed(1)}%`);
+  const statusLabel = (a.tier && a.tier.label) || a.status || '—';
   return {
     title: `${bucket} — ${g.away} @ ${g.home}`,
+    description: ls.label && vs.label && ls.label !== vs.label
+      ? `More likely **${ls.label}**, but **${vs.label}**'s price is the value.`
+      : (vs.label ? `Model and market agree on **${vs.label}**.` : `No priced value — ${String(statusLabel).toLowerCase()}.`),
     color: GRADE_COLORS[bucket] || 0x7c5cfc,
     fields: [
+      { name: 'Value side', value: vs.label ? `${vs.label} ${am(vs.american_odds)}${vs.book ? ` · ${vs.book}` : ''}` : 'no priced value', inline: false },
+      { name: 'Valid through', value: a.price_limit_american != null ? am(a.price_limit_american) : '—', inline: true },
       { name: 'Grade', value: `${a.grade || bucket} · ${a.score != null ? a.score : '—'}/100`, inline: true },
-      { name: 'Status', value: (a.tier && a.tier.label) || a.status || '—', inline: true },
-      { name: 'Value side', value: vs.label ? `${vs.label} ${am(vs.american_odds)}${vs.book ? ` · ${vs.book}` : ''}` : '—', inline: true },
+      { name: 'Status', value: statusLabel, inline: true },
+      { name: 'Most likely', value: ls.label ? `${ls.label} ${pct(ls.probability)}` : '—', inline: true },
+      { name: 'Fair vs break-even', value: `${pct(a.fair_probability)} fair · ${pct(a.market_break_even)} BE${vs.value_points != null ? ` · ${vs.value_points > 0 ? '+' : ''}${vs.value_points} pts` : ''}`, inline: false },
     ],
-    footer: { text: `The Fixer · sealed ${a.seal || a.assessment_id || ''} · report only · 21+` },
+    footer: { text: `The Fixer · sealed ${a.seal || a.assessment_id || ''} · report only · not financial advice · 21+` },
   };
 }
 
