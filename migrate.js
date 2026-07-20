@@ -91,6 +91,69 @@ async function runCoreMigrations(client) {
   await client.query(`
     CREATE INDEX IF NOT EXISTS users_stripe_subscription_id_idx ON users (stripe_subscription_id)
   `);
+
+  // ──────────────────────────────────────────────
+  // Core app tables (communities, messages, waitlist).
+  // These back the main dashboard endpoints (/api/analytics, /api/messages,
+  // /api/discord/status, /api/communities, /api/waitlist). They were created by
+  // hand in the original DB and never had a migration — so a fresh Neon deploy
+  // had the connector tables but not these, and every dashboard data endpoint
+  // 500'd with "relation does not exist". Kept here (idempotent, runs every
+  // build) so any new database comes up complete. communities MUST precede
+  // messages (messages.community_id references it).
+  // ──────────────────────────────────────────────
+
+  // Communities — one row per connected Discord guild (auto-registered on ingest)
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS communities (
+      id SERIAL PRIMARY KEY,
+      guild_id VARCHAR(255) UNIQUE,
+      name VARCHAR(255),
+      api_key VARCHAR(255),
+      message_count INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  // Messages — classified community messages (the core feed the dashboard reads)
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id SERIAL PRIMARY KEY,
+      external_id VARCHAR(255),
+      platform VARCHAR(50) NOT NULL DEFAULT 'api',
+      channel VARCHAR(255),
+      author_name VARCHAR(255),
+      author_id VARCHAR(255),
+      content TEXT NOT NULL,
+      intent VARCHAR(50),
+      sentiment VARCHAR(50),
+      confidence NUMERIC(5,3) DEFAULT 0,
+      ai_response TEXT,
+      response_status VARCHAR(50) DEFAULT 'suggested',
+      metadata JSONB DEFAULT '{}'::jsonb,
+      community_id INTEGER REFERENCES communities(id),
+      processed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await client.query(`CREATE INDEX IF NOT EXISTS messages_created_at_idx ON messages (created_at DESC)`);
+  await client.query(`CREATE INDEX IF NOT EXISTS messages_platform_idx ON messages (platform)`);
+  await client.query(`CREATE INDEX IF NOT EXISTS messages_community_id_idx ON messages (community_id)`);
+
+  // Waitlist — landing-page signups (UPSERT on LOWER(email) needs the unique index)
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS waitlist (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL,
+      name VARCHAR(255),
+      platform VARCHAR(100),
+      community_size VARCHAR(100),
+      referral_source VARCHAR(255),
+      status VARCHAR(50) DEFAULT 'pending',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+  await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS waitlist_email_unique_idx ON waitlist (LOWER(email))`);
 }
 
 /**
