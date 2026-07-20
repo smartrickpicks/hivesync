@@ -1491,6 +1491,90 @@ app.post('/api/discord/guild/feeds/toggle', adminAuth, async (req, res) => {
   }
 });
 
+// ── Picks Router: every pick → its grade's channel ──
+// The Fixer re-grades picks every ~90min, and EVERY pick posts regardless of
+// actionability — routing is by grade letter alone (A-/B+ collapse to A/B).
+// A pick posts to a grade channel the FIRST time it lands on that grade each
+// day, so movement (C→B) surfaces in the new channel without re-spamming the
+// old one. Wiring IS the whole config: Feed a channel as tier a/b/c/d/f (or
+// all) on the Server tab, the router does the rest. Sports later = tier
+// naming (mlb-a, nba-a…) — no code change.
+const PICKS_FEED_URL = process.env.PICKS_FEED_URL
+  || 'https://raw.githubusercontent.com/smartrickpicks/fixer-data/main/picks_data.json';
+const GRADE_TIERS = ['a', 'b', 'c', 'd', 'f'];
+const GRADE_COLORS = { A: 0x1fbe6b, B: 0x00d1ff, C: 0xeab308, D: 0xf97316, F: 0xef4444 };
+
+function pickEmbed(g, bucket) {
+  const a = g.asmt || {};
+  const vs = a.value_side || {};
+  const am = (n) => (n == null ? '—' : n > 0 ? `+${n}` : `${n}`);
+  return {
+    title: `${bucket} — ${g.away} @ ${g.home}`,
+    color: GRADE_COLORS[bucket] || 0x7c5cfc,
+    fields: [
+      { name: 'Grade', value: `${a.grade || bucket} · ${a.score != null ? a.score : '—'}/100`, inline: true },
+      { name: 'Status', value: (a.tier && a.tier.label) || a.status || '—', inline: true },
+      { name: 'Value side', value: vs.label ? `${vs.label} ${am(vs.american_odds)}${vs.book ? ` · ${vs.book}` : ''}` : '—', inline: true },
+    ],
+    footer: { text: `The Fixer · sealed ${a.seal || a.assessment_id || ''} · report only · 21+` },
+  };
+}
+
+let picksRouterBusy = false;
+async function pollPicks() {
+  if (picksRouterBusy) return;
+  picksRouterBusy = true;
+  try {
+    const { rows: routes } = await pool.query(
+      `select tier from discord_channels where guild_id = 'default' and enabled and tier = any($1)`,
+      [[...GRADE_TIERS, 'all']]
+    );
+    if (!routes.length) return; // nothing wired — router idle
+    const wired = new Set(routes.map((r) => r.tier));
+
+    let feed;
+    try {
+      const r = await fetch(`${PICKS_FEED_URL}?t=${Date.now()}`, { cache: 'no-store' });
+      feed = await r.json();
+    } catch (_) {
+      return; // transient feed failure — next tick retries
+    }
+
+    const { sendToChannel } = require('./connectors');
+    for (const g of Array.isArray(feed.games) ? feed.games : []) {
+      const a = g.asmt;
+      if (!a || !a.grade) continue;
+      const bucket = String(a.grade).trim().toUpperCase()[0];
+      if (!'ABCDF'.includes(bucket)) continue;
+      const day = (a.commence_time || '').slice(0, 10) || feed.date || '';
+
+      for (const tier of [bucket.toLowerCase(), 'all']) {
+        if (!wired.has(tier)) continue;
+        // once per (game, grade, channel, day) — reserve before send, release
+        // on failure so the next tick can retry (never poison the key)
+        const dedupKey = `pick:${day}:${g.away}@${g.home}:${bucket}:${tier}`;
+        const ins = await pool.query(
+          `insert into discord_publish_log (dedup_key, kind, guild_id) values ($1, $2, 'default')
+           on conflict (dedup_key) do nothing returning dedup_key`,
+          [dedupKey, `pick-${tier}`]
+        );
+        if (!ins.rows.length) continue;
+        const out = await sendToChannel(pool, 'default', tier, { embed: pickEmbed(g, bucket) }, { logKey: dedupKey, kind: `pick-${tier}` });
+        if (!out.ok) {
+          await pool.query(`delete from discord_publish_log where dedup_key = $1`, [dedupKey]);
+          console.error(`[picks router] ${tier} send failed:`, out.error);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[picks router]', e.message);
+  } finally {
+    picksRouterBusy = false;
+  }
+}
+setInterval(pollPicks, 5 * 60 * 1000);
+setTimeout(pollPicks, 15 * 1000); // first pass shortly after boot
+
 // Send a message as the bot to any channel in the guild. Same safety floor as
 // every other send path: mass mentions are stripped, no override.
 app.post('/api/discord/send', adminAuth, async (req, res) => {

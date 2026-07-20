@@ -1988,8 +1988,9 @@
                 ${wired.map(f => `<span class="badge ${f.enabled ? 'on' : 'off'}" style="cursor:pointer;" title="click to ${f.enabled ? 'pause' : 'resume'} this feed"
                     onclick="toggleFeed('${escapeAttr(f.tier)}', ${f.enabled ? 'false' : 'true'})">feed:${escapeHtml(f.tier)}${f.enabled ? '' : ' ⏸'}</span>`).join('')}
                 <select class="feed-select" id="ft-${escapeAttr(c.id)}">
-                    <option value="top">top</option><option value="qualified">qualified</option>
-                    <option value="watch">watch</option><option value="pass">pass</option><option value="all">all</option>
+                    <option value="a">grade A</option><option value="b">grade B</option>
+                    <option value="c">grade C</option><option value="d">grade D</option>
+                    <option value="f">grade F</option><option value="all">all picks</option>
                 </select>
                 <button class="icon-btn" onclick="wireFeed('${escapeAttr(c.id)}')">Feed</button>` : '';
             return `<div class="job-item" style="display:flex;align-items:center;gap:8px;cursor:default;flex-wrap:wrap;">

@@ -286,3 +286,7 @@ module.exports = (app, pool) => {
 
   console.log('[connectors] Discord connector routes mounted' + (ADMIN_KEY ? '' : ' (ADMIN_KEY unset — routes 401 until set)'));
 };
+
+// The shared send primitive, for in-process callers (the picks router in
+// server.js). Same path every send takes: mention lock + publish log.
+module.exports.sendToChannel = sendToChannel;
