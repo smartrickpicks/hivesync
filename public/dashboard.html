@@ -535,6 +535,11 @@
             max-height: 340px; overflow-y: auto;
         }
 
+        .feed-select {
+            background: var(--sunken); border: 1px solid var(--border); color: var(--text2);
+            border-radius: 6px; font-size: 11px; padding: 3px 6px; font-family: var(--font-sans);
+        }
+
         /* Coming soon stubs */
         .soon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .soon-card-body { padding: 20px; color: var(--text3); font-size: 0.85rem; line-height: 1.55; }
@@ -1975,14 +1980,58 @@
             fillGuildSelects(s);
         }
 
-        function chanRow(c) {
+        function chanRow(c, feeds) {
             const icon = c.type === 'voice' ? '🔊' : c.type === 'forum' ? '🗂' : c.type === 'announcement' ? '📢' : '#';
-            return `<div class="job-item" style="display:flex;align-items:center;gap:10px;cursor:default;">
+            const feedable = c.type === 'text' || c.type === 'announcement';
+            const wired = (feeds || []).filter(f => f.channel_id === c.id);
+            const feedBits = feedable ? `
+                ${wired.map(f => `<span class="badge ${f.enabled ? 'on' : 'off'}" style="cursor:pointer;" title="click to ${f.enabled ? 'pause' : 'resume'} this feed"
+                    onclick="toggleFeed('${escapeAttr(f.tier)}', ${f.enabled ? 'false' : 'true'})">feed:${escapeHtml(f.tier)}${f.enabled ? '' : ' ⏸'}</span>`).join('')}
+                <select class="feed-select" id="ft-${escapeAttr(c.id)}">
+                    <option value="top">top</option><option value="qualified">qualified</option>
+                    <option value="watch">watch</option><option value="pass">pass</option><option value="all">all</option>
+                </select>
+                <button class="icon-btn" onclick="wireFeed('${escapeAttr(c.id)}')">Feed</button>` : '';
+            return `<div class="job-item" style="display:flex;align-items:center;gap:8px;cursor:default;flex-wrap:wrap;">
                 <span class="mono" style="color:var(--text3);width:18px;text-align:center;">${icon}</span>
                 <span style="color:var(--text);flex:1;min-width:0;">${escapeHtml(c.name)}</span>
                 <span class="badge kind">${escapeHtml(c.type)}</span>
+                ${feedBits}
                 <button class="icon-btn danger" onclick="deleteGuildChannel('${escapeAttr(c.id)}', '${escapeAttr(c.name)}')">Delete</button>
             </div>`;
+        }
+
+        // One click: the bot mints (or reuses) a "Hivesync Feed" webhook on the
+        // channel and writes the tier row the picks publisher reads. No Discord
+        // UI, no URL pasting.
+        async function wireFeed(channelId) {
+            const sel = document.getElementById('ft-' + channelId);
+            const tier = sel ? sel.value : 'top';
+            try {
+                const out = await connApi('/api/discord/guild/webhooks', {
+                    method: 'POST',
+                    body: JSON.stringify({ channel_id: channelId, tier }),
+                });
+                loadGuild();
+                const note = document.getElementById('sv-note');
+                note.style.display = '';
+                note.className = 'conn-note live-ok';
+                note.innerHTML = `<span><strong>Feed wired</strong> — tier "${escapeHtml(out.tier)}" now posts to ${escapeHtml(out.channel)}. It's live in the Channels tab too.</span>`;
+            } catch (err) {
+                if (err.message !== 'unauthorized') alert('Feed wire failed: ' + err.message);
+            }
+        }
+
+        async function toggleFeed(tier, enabled) {
+            try {
+                await connApi('/api/discord/guild/feeds/toggle', {
+                    method: 'POST',
+                    body: JSON.stringify({ tier, enabled }),
+                });
+                loadGuild();
+            } catch (err) {
+                if (err.message !== 'unauthorized') alert('Toggle failed: ' + err.message);
+            }
         }
 
         function renderGuildTree(s) {
@@ -1993,11 +2042,11 @@
                     <span class="mono" style="font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);flex:1;">${escapeHtml(cat.name)}</span>
                     <button class="icon-btn danger" onclick="deleteGuildChannel('${escapeAttr(cat.id)}', '${escapeAttr(cat.name)} (category)')">Delete</button>
                 </div>`;
-                html += (cat.channels || []).map(chanRow).join('');
+                html += (cat.channels || []).map((c) => chanRow(c, s.feeds)).join('');
             }
             if ((s.uncategorized || []).length) {
                 html += '<div class="job-item" style="cursor:default;background:rgba(124,92,252,0.04);"><span class="mono" style="font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);">No category</span></div>';
-                html += s.uncategorized.map(chanRow).join('');
+                html += s.uncategorized.map((c) => chanRow(c, s.feeds)).join('');
             }
             tree.innerHTML = html || '<div class="empty-state"><h3>Empty server</h3><p>Create your first category or channel on the right.</p></div>';
         }

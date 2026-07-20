@@ -1190,10 +1190,11 @@ async function getDiscordConfig() {
 
 // View Channels (1024) + Send Messages (2048) + Embed Links (16384) +
 // Read Message History (65536) + Manage Channels (16) + Manage Events
-// (8589934592) + Manage Threads (17179869184) = what the Server tab actually
-// uses: tracking, bot-sends, structure management, events, threads. Manage
-// Roles / Kick / Ban deliberately NOT requested — nothing here uses them.
-const INVITE_PERMISSIONS = '25769888784';
+// (8589934592) + Manage Threads (17179869184) + Manage Webhooks (536870912)
+// = what the Server tab actually uses: tracking, bot-sends, structure
+// management, events, threads, one-click feed webhooks. Manage Roles lands
+// with the M-2 fence module (spec); Kick / Ban / Admin never requested.
+const INVITE_PERMISSIONS = '26306759696';
 
 app.get('/api/discord/setup', adminAuth, async (req, res) => {
   try {
@@ -1335,7 +1336,16 @@ app.get('/api/discord/guild/structure', adminAuth, async (req, res) => {
       const t = await discordApi('GET', `/guilds/${guildId}/threads/active`);
       threads = (t.threads || []).map((th) => ({ id: th.id, name: th.name, parent_id: th.parent_id }));
     } catch (_) { /* missing perms — threads stay null, structure still renders */ }
-    res.json({ success: true, guild_id: guildId, categories: cats, uncategorized, threads });
+    // Which channels already have a feed wired (tier → webhook), for the tree.
+    let feeds = [];
+    try {
+      await ensureFeedColumn();
+      const fr = await pool.query(
+        `select tier, label, enabled, channel_id from discord_channels where guild_id = 'default' and channel_id is not null`
+      );
+      feeds = fr.rows;
+    } catch (_) { /* table may predate the column locally — tree still renders */ }
+    res.json({ success: true, guild_id: guildId, categories: cats, uncategorized, threads, feeds });
   } catch (err) {
     discordErr(res, err, 'structure fetch failed');
   }
@@ -1409,6 +1419,75 @@ app.post('/api/discord/guild/events', adminAuth, async (req, res) => {
     res.json({ success: true, event: { id: ev.id, name: ev.name } });
   } catch (err) {
     discordErr(res, err, 'event create failed');
+  }
+});
+
+// ── Channel feeds: one-click webhook provisioning ──
+// The picks publisher reads discord_channels (tier → webhook_url). Instead of
+// hand-creating webhooks in Discord's UI and pasting URLs, the bot mints (or
+// reuses) a "Hivesync Feed" webhook on the channel and writes the row itself.
+let feedColumnEnsured = false;
+async function ensureFeedColumn() {
+  if (feedColumnEnsured) return;
+  await pool.query(`alter table discord_channels add column if not exists channel_id text`);
+  feedColumnEnsured = true;
+}
+
+app.post('/api/discord/guild/webhooks', adminAuth, async (req, res) => {
+  try {
+    await ensureFeedColumn();
+    const guildId = await resolveGuildId();
+    const body = req.body || {};
+    if (!/^\d{15,21}$/.test(String(body.channel_id || ''))) {
+      return res.status(400).json({ success: false, message: 'channel_id required' });
+    }
+    const tier = typeof body.tier === 'string' ? body.tier.trim().toLowerCase() : '';
+    if (!/^[a-z0-9_-]{1,32}$/.test(tier)) {
+      return res.status(400).json({ success: false, message: 'tier required (top, qualified, watch, pass, all, …)' });
+    }
+    const ch = await discordApi('GET', `/channels/${body.channel_id}`);
+    if (ch.guild_id !== guildId) return res.status(400).json({ success: false, message: 'channel is not in the configured guild' });
+    if (![0, 5].includes(ch.type)) return res.status(400).json({ success: false, message: 'feeds attach to text or announcement channels' });
+
+    // Reuse the bot's existing feed webhook on this channel, else create one —
+    // repeated wiring never piles up duplicate webhooks.
+    const hooks = await discordApi('GET', `/channels/${body.channel_id}/webhooks`);
+    let hook = (hooks || []).find((h) => h.token && h.name === 'Hivesync Feed');
+    if (!hook) hook = await discordApi('POST', `/channels/${body.channel_id}/webhooks`, { name: 'Hivesync Feed' });
+    if (!hook || !hook.token) return res.status(502).json({ success: false, message: 'Discord did not return a webhook token' });
+    const url = `https://discord.com/api/webhooks/${hook.id}/${hook.token}`;
+
+    // Tenant key stays 'default' — that is what the publisher and the
+    // /connectors routes resolve to today (no guild header). channel_id is the
+    // dashboard's wiring map. Same table, same masked-read rules as always.
+    await pool.query(
+      `insert into discord_channels (guild_id, tier, webhook_url, label, enabled, channel_id, updated_at)
+       values ('default', $1, $2, $3, true, $4, now())
+       on conflict (guild_id, tier) do update set webhook_url = $2, label = $3, enabled = true, channel_id = $4, updated_at = now()`,
+      [tier, url, `#${ch.name}`.slice(0, 100), body.channel_id]
+    );
+    console.log(`[Discord] feed wired: tier "${tier}" → #${ch.name}`);
+    res.json({ success: true, tier, channel: `#${ch.name}` });
+  } catch (err) {
+    discordErr(res, err, 'feed wire failed');
+  }
+});
+
+app.post('/api/discord/guild/feeds/toggle', adminAuth, async (req, res) => {
+  try {
+    await ensureFeedColumn();
+    const body = req.body || {};
+    const tier = typeof body.tier === 'string' ? body.tier.trim().toLowerCase() : '';
+    if (!tier) return res.status(400).json({ success: false, message: 'tier required' });
+    const r = await pool.query(
+      `update discord_channels set enabled = $2, updated_at = now() where guild_id = 'default' and tier = $1`,
+      [tier, Boolean(body.enabled)]
+    );
+    if (!r.rowCount) return res.status(404).json({ success: false, message: 'no feed with that tier' });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[POST /api/discord/guild/feeds/toggle]', err.message);
+    res.status(500).json({ success: false, message: 'toggle failed' });
   }
 });
 
