@@ -1015,6 +1015,38 @@ app.get('/api/communities/me', async (req, res) => {
 
 
 // ──────────────────────────────────────────────
+// GET /api/discord/status — live wiring diagnostics
+// Why the dashboard is (or isn't) showing data: bot connection state, env
+// presence (names/booleans only — never values), community registration, and
+// ingest freshness. The dashboard renders this as the Live banner.
+// ──────────────────────────────────────────────
+
+app.get('/api/discord/status', async (req, res) => {
+  try {
+    const bot = require('./bot').status();
+    const [commResult, msgResult] = await Promise.all([
+      pool.query('SELECT COUNT(*)::int AS n FROM communities'),
+      pool.query(`SELECT COUNT(*)::int AS n, MAX(created_at) AS last FROM messages WHERE platform = 'discord'`),
+    ]);
+    res.json({
+      success: true,
+      bot,
+      env: {
+        bot_token_set: Boolean(process.env.DISCORD_BOT_TOKEN),
+        webhook_url_set: Boolean(process.env.DISCORD_WEBHOOK_URL),
+      },
+      communities: commResult.rows[0].n,
+      discord_messages: msgResult.rows[0].n,
+      last_discord_message_at: msgResult.rows[0].last,
+    });
+  } catch (err) {
+    console.error('[GET /api/discord/status]', err.message);
+    res.status(500).json({ success: false, message: 'status failed' });
+  }
+});
+
+
+// ──────────────────────────────────────────────
 // POST /api/discord/webhook/:api_key — Discord webhook receiver
 // ──────────────────────────────────────────────
 

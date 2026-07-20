@@ -432,6 +432,12 @@
             border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text2); line-height: 1.5;
         }
         .conn-note strong { color: var(--accent); }
+        .conn-note.live-ok   { background: rgba(34,197,94,0.06);  border-color: rgba(34,197,94,0.25); }
+        .conn-note.live-ok strong   { color: var(--ship); }
+        .conn-note.live-warn { background: rgba(234,179,8,0.06);  border-color: rgba(234,179,8,0.25); }
+        .conn-note.live-warn strong { color: var(--build); }
+        .conn-note.live-err  { background: rgba(239,68,68,0.06);  border-color: rgba(239,68,68,0.25); }
+        .conn-note.live-err strong  { color: var(--discover); }
 
         .conn-form { padding: 20px; }
         .conn-form .field { margin-bottom: 12px; }
@@ -630,6 +636,9 @@
                         <p class="subtitle">Community messages analyzed and responded to by AI</p>
                     </div>
                 </div>
+
+                <!-- Live wiring status — says WHY the feed is empty, never just blanks -->
+                <div id="discord-status" class="conn-note" style="display:none;"></div>
 
                 <!-- Stats -->
                 <div class="stats-grid" id="stats-grid">
@@ -1173,8 +1182,53 @@
         let currentFilter = 'all';
         let allMessages = [];
 
+        // ── Live wiring banner ──
+        // Renders /api/discord/status so an empty feed always explains itself:
+        // missing env vars, portal intents, unregistered community, or "live".
+        async function loadDiscordStatus() {
+            const el = document.getElementById('discord-status');
+            if (!el) return;
+            try {
+                const s = await fetch(`${API_BASE}/api/discord/status`).then(r => r.json());
+                if (!s.success) throw new Error('status failed');
+                const bot = s.bot || {};
+                el.style.display = '';
+                if (bot.status === 'connected') {
+                    const last = s.last_discord_message_at ? timeAgo(s.last_discord_message_at) : 'never';
+                    const noCommunity = s.communities === 0
+                        ? ' · <strong>no community registered — ingestion is being rejected; run the setup call (POST /api/communities)</strong>'
+                        : '';
+                    el.className = 'conn-note live-ok';
+                    el.innerHTML = `<span><strong>&#9679; Live</strong> — connected as ${escapeHtml(bot.bot_tag || 'bot')}
+                        · ${bot.guilds} server${bot.guilds === 1 ? '' : 's'}
+                        · ${bot.messages_seen} message${bot.messages_seen === 1 ? '' : 's'} + ${bot.joins_seen} join${bot.joins_seen === 1 ? '' : 's'} this session
+                        · last stored message: ${escapeHtml(last)}${noCommunity}</span>`;
+                } else if (bot.status === 'error') {
+                    el.className = 'conn-note live-err';
+                    el.innerHTML = `<span><strong>Bot failed to connect:</strong> ${escapeHtml(bot.last_error || 'unknown error')}.
+                        If this mentions "disallowed intents", enable <strong>Message Content</strong> and
+                        <strong>Server Members</strong> under Developer Portal &rarr; Bot &rarr; Privileged Gateway Intents,
+                        then restart the service.</span>`;
+                } else if (bot.status === 'disabled') {
+                    el.className = 'conn-note live-err';
+                    el.innerHTML = `<span><strong>Not connected to Discord.</strong>
+                        Missing on the server: <strong>${(bot.missing || []).map(escapeHtml).join(' + ') || 'bot env vars'}</strong>.
+                        Set them in Render &rarr; Environment and redeploy. The bot token comes from the Discord developer
+                        portal (with Message Content + Server Members intents enabled); the webhook URL is
+                        <span style="font-family:var(--font-mono);">https://&lt;this-host&gt;/api/discord/webhook/&lt;api_key&gt;</span>
+                        from your registered community.</span>`;
+                } else {
+                    el.className = 'conn-note live-warn';
+                    el.innerHTML = '<span><strong>Bot connecting&hellip;</strong> refresh in a few seconds.</span>';
+                }
+            } catch (e) {
+                el.style.display = 'none'; // endpoint not deployed yet — stay quiet
+            }
+        }
+
         // ── Load data ──
         async function loadDashboard() {
+            loadDiscordStatus();
             try {
                 const [analyticsRes, messagesRes] = await Promise.all([
                     fetch(`${API_BASE}/api/analytics`).then(r => r.json()),
