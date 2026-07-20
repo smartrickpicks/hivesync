@@ -186,3 +186,69 @@ trigger (auto-DM flows), delays.
 *Runtime lives in hivesync (always-on Render, gateway already connected).
 The gate stays deployed and dormant as the one-field rollback. Build → audit
 (author excluded) → ship, per the house loop.*
+
+---
+
+## AMENDMENT A1 (Otto audit, 2026-07-20) — grounded against live code
+
+Verified against `hivesync/bot.js`, `hivesync/render.yaml`, and
+`airlock-discord-gate/api/interactions.js`.
+
+**1. Always-on is now ENFORCED (prerequisite for Option C — was false).**
+`render.yaml` had NO `plan:` field. The discord.js gateway runs *inside* the web
+process (`bot.js` `client.login`, booted by `server.js`; `startCommand: npm start`),
+so a sleep-eligible plan drops the websocket on idle spin-down and kills every
+interaction until a ~30–60s cold start. **Pinned `plan: starter`.** Do not downgrade
+below an always-on plan while the bot owns interactions. (The spec asserted
+"always-on Render" — it was not; now it is.)
+
+**2. `/link` vs Option C — SINGLE-APPLICATION CONSTRAINT (decision needed).**
+The gate and the hivesync bot are ONE Discord application (one portal endpoint;
+Option C "clears the endpoint URL" and "ports the gate's handlers"). A single app has
+exactly ONE interaction delivery path: endpoint SET → gate gets ALL interactions;
+endpoint EMPTY → gateway gets ALL. **You cannot keep `/link` natively on the gate's
+HTTP endpoint AND move workflow interactions to the gateway for the same app.**
+Zac's call ("keep `/link` on the gate") therefore resolves one of two ways:
+
+- **A1a — split `/link` into its OWN Discord application (RECOMMENDED).** The gate is
+  already built as a zero-dependency Vercel-edge identity endpoint ("no bot token, no
+  gateway, no always-on process"). Give it its own app (own public key + `/link`
+  command, invited as a second bot). The hivesync-bot app then does Option C cleanly
+  (gateway owns ALL workflow interactions), and `/link` stays 100% on the gate,
+  independent of Render forever — the Fixer money-funnel login never touches hivesync
+  uptime. Cost: a second bot in the server. (conviction: 80% this is the right call,
+  flips if a second bot in the guild is unacceptable UX.)
+- **A1b — Option A relay instead of C (fallback).** Keep the single app's HTTP endpoint
+  on the gate; the gate natively answers `/link` and forwards `wf:*` + other commands to
+  hivesync. Keeps `/link` on the gate with no second app, but the workflow engine loses
+  native discord.js `threads/modals/deferReply` and eats a relay hop + the 3s deadline.
+- **Do NOT ship C-as-written** (it ports `/link` onto the gateway) — that contradicts
+  "keep `/link` on the gate."
+
+**3. NEW SCOPE — dashboard slash-command registry (Zac, folded into WB-1).**
+A "Commands" surface in the dashboard registers/edits/deletes the guild's slash commands
+via the Discord API, so command definitions and their logic are editable from the
+dashboard, not hardcoded. Adds:
+- a **`slash_command` trigger type** to §2 — a registered command launches a workflow's
+  entry step (alongside `button_post`).
+- Commands list: name, description, options, bound workflow (or ported handler);
+  register / edit / delete. Guild commands via `PATCH/POST/DELETE
+  .../applications/{application_id}/guilds/{guild_id}/commands` (instant propagation);
+  `application_id` derived server-side via `GET /applications/@me` with the bot token,
+  never trusted from the client.
+- Ported gate handlers (`/poll`, `/otto`, `beam_start`) appear here; **`/link` is shown
+  READ-ONLY, never editable/deletable from this surface** (owned by the gate / its own
+  app per A1a/A1b).
+- **Safety floor:** the registry MUST use single-command create/update/delete — NEVER a
+  bulk `PUT .../commands` overwrite, which would wipe commands the gate owns (if same
+  app). Under A1a (separate app) this collision disappears. Command changes are a human
+  click (same publish floor as workflows); ADMIN_KEY-gated like every admin surface.
+
+**4. Abandoned-run fix (from the §3 read).** `wf_runs_one_active` locks a member out if
+they bail mid-flow — the run stays `active`, the thread auto-archives, and they hit
+"you're already mid-flow" pointing at a dead thread. Add: on thread archive/close →
+mark the run `abandoned`, and/or a TTL sweep of stale `active` runs, so a bailed member
+can start fresh.
+
+Everything else in WB-1 stands. Gate stays deployed (dormant under A1a, active-relay
+under A1b) as the documented rollback.
