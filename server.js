@@ -1188,9 +1188,12 @@ async function getDiscordConfig() {
   }
 }
 
-// Read-only View Channels (1024) + Read Message History (65536) — tracking
-// needs nothing more; the publisher side uses webhooks, not bot permissions.
-const INVITE_PERMISSIONS = 66560;
+// View Channels (1024) + Send Messages (2048) + Embed Links (16384) +
+// Read Message History (65536) + Manage Channels (16) + Manage Events
+// (8589934592) + Manage Threads (17179869184) = what the Server tab actually
+// uses: tracking, bot-sends, structure management, events, threads. Manage
+// Roles / Kick / Ban deliberately NOT requested — nothing here uses them.
+const INVITE_PERMISSIONS = '25769888784';
 
 app.get('/api/discord/setup', adminAuth, async (req, res) => {
   try {
@@ -1263,6 +1266,171 @@ app.post('/api/discord/setup', adminAuth, async (req, res) => {
   } catch (err) {
     console.error('[POST /api/discord/setup]', err.message);
     res.status(500).json({ success: false, message: 'setup save failed' });
+  }
+});
+
+// ──────────────────────────────────────────────
+// Guild management — the dashboard drives Discord's REST API with the stored
+// bot token: structure, categories/channels, events, threads, bot-sends.
+// All admin-gated. Mass mentions stay locked on every send path.
+// ──────────────────────────────────────────────
+
+async function discordApi(method, apiPath, body) {
+  const cfg = await getDiscordConfig();
+  const token = (cfg && cfg.bot_token) || process.env.DISCORD_BOT_TOKEN;
+  if (!token) { const e = new Error('no bot token — connect in Setup first'); e.status = 400; throw e; }
+  const r = await fetch(`https://discord.com/api/v10${apiPath}`, {
+    method,
+    headers: { Authorization: `Bot ${token}`, 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await r.text();
+  let data = null;
+  try { data = JSON.parse(text); } catch (_) { /* empty body (e.g. 204) */ }
+  if (!r.ok) {
+    const e = new Error((data && data.message) || `discord ${r.status}`);
+    e.status = r.status;
+    throw e;
+  }
+  return data;
+}
+
+async function resolveGuildId() {
+  const cfg = await getDiscordConfig();
+  if (cfg && cfg.guild_id) return cfg.guild_id;
+  const list = require('./bot').status().guild_list;
+  if (list.length === 1) return list[0].id;
+  const e = new Error(list.length ? 'bot is in multiple servers — pick the guild in Setup' : 'no guild — connect the bot in Setup');
+  e.status = 400;
+  throw e;
+}
+
+function discordErr(res, err, fallback) {
+  const status = err.status && err.status >= 400 && err.status < 600 ? err.status : 500;
+  const hint = err.status === 403
+    ? ' — the bot lacks this permission; re-invite it with the updated link in Setup (the invite now carries manage permissions) or grant its role Manage Channels/Events/Threads'
+    : '';
+  res.status(status).json({ success: false, message: (err.message || fallback) + hint });
+}
+
+const CHANNEL_TYPE_TO_DISCORD = { text: 0, voice: 2, announcement: 5, category: 4, forum: 15 };
+const DISCORD_TYPE_TO_LABEL = { 0: 'text', 2: 'voice', 4: 'category', 5: 'announcement', 15: 'forum', 13: 'stage' };
+
+// Live server structure: categories with their channels, plus active threads.
+app.get('/api/discord/guild/structure', adminAuth, async (req, res) => {
+  try {
+    const guildId = await resolveGuildId();
+    const channels = await discordApi('GET', `/guilds/${guildId}/channels`);
+    const cats = channels.filter((c) => c.type === 4).sort((a, b) => a.position - b.position)
+      .map((c) => ({ id: c.id, name: c.name, position: c.position, channels: [] }));
+    const byCat = Object.fromEntries(cats.map((c) => [c.id, c]));
+    const uncategorized = [];
+    for (const c of channels.filter((c) => c.type !== 4).sort((a, b) => a.position - b.position)) {
+      const entry = { id: c.id, name: c.name, type: DISCORD_TYPE_TO_LABEL[c.type] || String(c.type), topic: c.topic || null };
+      if (c.parent_id && byCat[c.parent_id]) byCat[c.parent_id].channels.push(entry);
+      else uncategorized.push(entry);
+    }
+    let threads = null;
+    try {
+      const t = await discordApi('GET', `/guilds/${guildId}/threads/active`);
+      threads = (t.threads || []).map((th) => ({ id: th.id, name: th.name, parent_id: th.parent_id }));
+    } catch (_) { /* missing perms — threads stay null, structure still renders */ }
+    res.json({ success: true, guild_id: guildId, categories: cats, uncategorized, threads });
+  } catch (err) {
+    discordErr(res, err, 'structure fetch failed');
+  }
+});
+
+// Create a category or channel (optionally inside a category, with topic).
+app.post('/api/discord/guild/channels', adminAuth, async (req, res) => {
+  try {
+    const guildId = await resolveGuildId();
+    const body = req.body || {};
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!name || name.length > 100) return res.status(400).json({ success: false, message: 'name is required (max 100 chars)' });
+    const type = CHANNEL_TYPE_TO_DISCORD[body.type];
+    if (type === undefined) return res.status(400).json({ success: false, message: 'type must be text | voice | announcement | forum | category' });
+    const payload = { name, type };
+    if (type !== 4 && typeof body.parent_id === 'string' && /^\d{15,21}$/.test(body.parent_id)) payload.parent_id = body.parent_id;
+    if (type !== 4 && typeof body.topic === 'string' && body.topic.trim()) payload.topic = body.topic.trim().slice(0, 1024);
+    const created = await discordApi('POST', `/guilds/${guildId}/channels`, payload);
+    console.log(`[Discord] created ${body.type} "${name}" (${created.id})`);
+    res.json({ success: true, channel: { id: created.id, name: created.name, type: body.type } });
+  } catch (err) {
+    discordErr(res, err, 'channel create failed');
+  }
+});
+
+app.delete('/api/discord/guild/channels/:id', adminAuth, async (req, res) => {
+  try {
+    if (!/^\d{15,21}$/.test(req.params.id)) return res.status(400).json({ success: false, message: 'bad channel id' });
+    // Guard: only delete channels belonging to the configured guild.
+    const guildId = await resolveGuildId();
+    const ch = await discordApi('GET', `/channels/${req.params.id}`);
+    if (ch.guild_id !== guildId) return res.status(400).json({ success: false, message: 'channel is not in the configured guild' });
+    await discordApi('DELETE', `/channels/${req.params.id}`);
+    console.log(`[Discord] deleted channel ${req.params.id}`);
+    res.json({ success: true });
+  } catch (err) {
+    discordErr(res, err, 'channel delete failed');
+  }
+});
+
+// Create a scheduled server event — voice-channel or external (location) type.
+app.post('/api/discord/guild/events', adminAuth, async (req, res) => {
+  try {
+    const guildId = await resolveGuildId();
+    const body = req.body || {};
+    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    if (!name || name.length > 100) return res.status(400).json({ success: false, message: 'event name is required (max 100 chars)' });
+    const start = new Date(body.start_time || '');
+    if (Number.isNaN(start.getTime()) || start <= new Date()) return res.status(400).json({ success: false, message: 'start_time must be a future date/time' });
+    const payload = {
+      name,
+      privacy_level: 2, // GUILD_ONLY — the only valid value
+      scheduled_start_time: start.toISOString(),
+      description: typeof body.description === 'string' ? body.description.trim().slice(0, 1000) : undefined,
+    };
+    if (typeof body.channel_id === 'string' && /^\d{15,21}$/.test(body.channel_id)) {
+      payload.entity_type = 2; // VOICE
+      payload.channel_id = body.channel_id;
+    } else if (typeof body.location === 'string' && body.location.trim()) {
+      payload.entity_type = 3; // EXTERNAL — requires location + end time
+      payload.entity_metadata = { location: body.location.trim().slice(0, 100) };
+      const end = new Date(body.end_time || '');
+      payload.scheduled_end_time = (!Number.isNaN(end.getTime()) && end > start)
+        ? end.toISOString()
+        : new Date(start.getTime() + 60 * 60 * 1000).toISOString(); // default: 1h
+    } else {
+      return res.status(400).json({ success: false, message: 'pick a voice channel or give a location' });
+    }
+    const ev = await discordApi('POST', `/guilds/${guildId}/scheduled-events`, payload);
+    console.log(`[Discord] created event "${name}" (${ev.id})`);
+    res.json({ success: true, event: { id: ev.id, name: ev.name } });
+  } catch (err) {
+    discordErr(res, err, 'event create failed');
+  }
+});
+
+// Send a message as the bot to any channel in the guild. Same safety floor as
+// every other send path: mass mentions are stripped, no override.
+app.post('/api/discord/send', adminAuth, async (req, res) => {
+  try {
+    const guildId = await resolveGuildId();
+    const body = req.body || {};
+    if (!/^\d{15,21}$/.test(String(body.channel_id || ''))) return res.status(400).json({ success: false, message: 'channel_id required' });
+    const content = typeof body.content === 'string' ? body.content.trim().slice(0, 2000) : '';
+    const embed = body.embed && typeof body.embed === 'object' ? body.embed : null;
+    if (!content && !embed) return res.status(400).json({ success: false, message: 'content or embed required' });
+    const ch = await discordApi('GET', `/channels/${body.channel_id}`);
+    if (ch.guild_id !== guildId) return res.status(400).json({ success: false, message: 'channel is not in the configured guild' });
+    const payload = { allowed_mentions: { parse: [] } };
+    if (content) payload.content = content;
+    if (embed) payload.embeds = [embed];
+    await discordApi('POST', `/channels/${body.channel_id}/messages`, payload);
+    res.json({ success: true });
+  } catch (err) {
+    discordErr(res, err, 'send failed');
   }
 });
 

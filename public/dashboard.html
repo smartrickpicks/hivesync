@@ -581,6 +581,9 @@
                 <a class="sidebar-item" id="nav-setup" href="/dashboard" onclick="switchTab('setup', this); return false;">
                     <span class="sidebar-item-dot" style="background:var(--build)"></span>Setup
                 </a>
+                <a class="sidebar-item" id="nav-server" href="/dashboard" onclick="switchTab('server', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--discover)"></span>Server
+                </a>
                 <a class="sidebar-item" id="nav-channels" href="/dashboard" onclick="switchTab('channels', this); return false;">
                     <span class="sidebar-item-dot" style="background:var(--accent)"></span>Channels
                 </a>
@@ -884,6 +887,112 @@
                     </div>
                 </div>
             </div><!-- /tab-setup -->
+
+            <!-- ═══ Server — live guild management via the bot (REST) ═══ -->
+            <div id="tab-server" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Server</h1>
+                        <p class="subtitle">Your live guild — categories, channels, events, threads, sends. Changes hit Discord immediately.</p>
+                    </div>
+                </div>
+                <div id="sv-note" class="conn-note" style="display:none;"></div>
+                <div class="main-grid">
+                    <div>
+                        <div class="section-card" style="margin-bottom:20px;">
+                            <div class="section-header">
+                                <h3>Structure</h3>
+                                <button class="filter-btn" onclick="loadGuild()">Refresh</button>
+                            </div>
+                            <div id="sv-tree" class="message-list">
+                                <div class="loading"><div class="spinner"></div> Loading structure…</div>
+                            </div>
+                        </div>
+                        <div class="section-card">
+                            <div class="section-header"><h3>Active Threads</h3></div>
+                            <div id="sv-threads" class="conn-form" style="font-size:0.85rem;color:var(--text2);">—</div>
+                        </div>
+                    </div>
+                    <div class="sidebar-stack">
+                        <div class="section-card">
+                            <div class="section-header"><h3>Create Channel / Category</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="sv-ch-name">Name</label>
+                                    <input id="sv-ch-name" placeholder="picks-chat" autocomplete="off" maxlength="100">
+                                </div>
+                                <div class="row2">
+                                    <div class="field">
+                                        <label for="sv-ch-type">Type</label>
+                                        <select id="sv-ch-type" onchange="document.getElementById('sv-ch-parent-field').style.display = this.value === 'category' ? 'none' : '';">
+                                            <option value="text">text</option>
+                                            <option value="announcement">announcement</option>
+                                            <option value="voice">voice</option>
+                                            <option value="forum">forum</option>
+                                            <option value="category">category</option>
+                                        </select>
+                                    </div>
+                                    <div class="field" id="sv-ch-parent-field">
+                                        <label for="sv-ch-parent">Category</label>
+                                        <select id="sv-ch-parent"><option value="">— none —</option></select>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="sv-ch-topic">Topic (optional)</label>
+                                    <input id="sv-ch-topic" placeholder="What this channel is for" autocomplete="off" maxlength="1024">
+                                </div>
+                                <button class="send-btn" onclick="createGuildChannel()">Create</button>
+                                <div class="test-result" id="sv-ch-result"></div>
+                            </div>
+                        </div>
+                        <div class="section-card">
+                            <div class="section-header"><h3>Create Event</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="sv-ev-name">Event name</label>
+                                    <input id="sv-ev-name" placeholder="Saturday slate watch-along" autocomplete="off" maxlength="100">
+                                </div>
+                                <div class="field">
+                                    <label for="sv-ev-start">Starts</label>
+                                    <input type="datetime-local" id="sv-ev-start">
+                                </div>
+                                <div class="row2">
+                                    <div class="field">
+                                        <label for="sv-ev-channel">Voice channel</label>
+                                        <select id="sv-ev-channel"><option value="">— or location →</option></select>
+                                    </div>
+                                    <div class="field">
+                                        <label for="sv-ev-location">Location</label>
+                                        <input id="sv-ev-location" placeholder="e.g. #today-plays" autocomplete="off" maxlength="100">
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label for="sv-ev-desc">Description (optional)</label>
+                                    <textarea id="sv-ev-desc" rows="2" maxlength="1000"></textarea>
+                                </div>
+                                <button class="send-btn" onclick="createGuildEvent()">Create Event</button>
+                                <div class="test-result" id="sv-ev-result"></div>
+                            </div>
+                        </div>
+                        <div class="section-card">
+                            <div class="section-header"><h3>Send as Otto</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="sv-send-channel">Channel</label>
+                                    <select id="sv-send-channel"></select>
+                                </div>
+                                <div class="field">
+                                    <label for="sv-send-content">Message (&le;2000)</label>
+                                    <textarea id="sv-send-content" rows="3" maxlength="2000" placeholder="Posts as the bot, mentions locked"></textarea>
+                                </div>
+                                <button class="send-btn" id="sv-send-btn" onclick="botSend()">Send</button>
+                                <div class="test-result" id="sv-send-result"></div>
+                                <p class="lock-note">Rich embeds live in the Composer tab; this is the quick plain-text lane. @everyone/@here are stripped server-side on every path.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-server -->
 
             <!-- ═══ Channels (contract §2) ═══ -->
             <div id="tab-channels" class="tab-content hidden">
@@ -1566,6 +1675,7 @@
             if (tab === 'waitlist') loadWaitlist();
             else if (tab === 'messages') loadDashboard();
             else if (tab === 'setup') { setupLoaded = false; loadSetup(); connPollTimer = setInterval(loadSetup, 5000); }
+            else if (tab === 'server') loadGuild();
             else if (tab === 'channels') loadChannels();
             else if (tab === 'composer') loadComposer();
             else if (tab === 'sources') { populateChannelSelects(); loadSources(); }
@@ -1626,7 +1736,7 @@
         // header on every call. Never rendered back, never logged.
         // ═══════════════════════════════════════════════════════════════════
 
-        const CONN_TABS = ['setup', 'channels', 'composer', 'sources', 'scheduled', 'activity', 'otto'];
+        const CONN_TABS = ['setup', 'server', 'channels', 'composer', 'sources', 'scheduled', 'activity', 'otto'];
         let connKey = sessionStorage.getItem('hs_admin_key') || '';
         let connState = { channels: [], sources: [], scheduled: [] };
         let pendingConnTab = 'channels';
@@ -1838,6 +1948,161 @@
                 loadSetup();
             } catch (err) {
                 if (err.message !== 'unauthorized') alert('Disconnect failed: ' + err.message);
+            }
+        }
+
+        // ── Server (live guild management via bot REST) ──
+        let guildStructure = null;
+
+        async function loadGuild() {
+            const tree = document.getElementById('sv-tree');
+            const note = document.getElementById('sv-note');
+            let s;
+            try {
+                s = await connApi('/api/discord/guild/structure');
+                note.style.display = 'none';
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                note.style.display = '';
+                note.className = 'conn-note live-err';
+                note.innerHTML = `<span><strong>Can't reach the guild:</strong> ${escapeHtml(err.message)}</span>`;
+                tree.innerHTML = '<div class="empty-state"><h3>No structure</h3><p>Connect the bot in Setup, pick your guild, and refresh.</p></div>';
+                return;
+            }
+            guildStructure = s;
+            renderGuildTree(s);
+            renderGuildThreads(s.threads);
+            fillGuildSelects(s);
+        }
+
+        function chanRow(c) {
+            const icon = c.type === 'voice' ? '🔊' : c.type === 'forum' ? '🗂' : c.type === 'announcement' ? '📢' : '#';
+            return `<div class="job-item" style="display:flex;align-items:center;gap:10px;cursor:default;">
+                <span class="mono" style="color:var(--text3);width:18px;text-align:center;">${icon}</span>
+                <span style="color:var(--text);flex:1;min-width:0;">${escapeHtml(c.name)}</span>
+                <span class="badge kind">${escapeHtml(c.type)}</span>
+                <button class="icon-btn danger" onclick="deleteGuildChannel('${escapeAttr(c.id)}', '${escapeAttr(c.name)}')">Delete</button>
+            </div>`;
+        }
+
+        function renderGuildTree(s) {
+            const tree = document.getElementById('sv-tree');
+            let html = '';
+            for (const cat of s.categories || []) {
+                html += `<div class="job-item" style="display:flex;align-items:center;gap:10px;cursor:default;background:rgba(124,92,252,0.04);">
+                    <span class="mono" style="font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text2);flex:1;">${escapeHtml(cat.name)}</span>
+                    <button class="icon-btn danger" onclick="deleteGuildChannel('${escapeAttr(cat.id)}', '${escapeAttr(cat.name)} (category)')">Delete</button>
+                </div>`;
+                html += (cat.channels || []).map(chanRow).join('');
+            }
+            if ((s.uncategorized || []).length) {
+                html += '<div class="job-item" style="cursor:default;background:rgba(124,92,252,0.04);"><span class="mono" style="font-size:0.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);">No category</span></div>';
+                html += s.uncategorized.map(chanRow).join('');
+            }
+            tree.innerHTML = html || '<div class="empty-state"><h3>Empty server</h3><p>Create your first category or channel on the right.</p></div>';
+        }
+
+        function renderGuildThreads(threads) {
+            const el = document.getElementById('sv-threads');
+            if (threads === null) { el.innerHTML = '<span style="color:var(--text3);">Not visible — the bot needs Manage Threads (re-invite from Setup).</span>'; return; }
+            if (!threads || !threads.length) { el.innerHTML = '<span style="color:var(--text3);">No active threads.</span>'; return; }
+            el.innerHTML = threads.map(t => `<div style="padding:4px 0;">🧵 ${escapeHtml(t.name)}</div>`).join('');
+        }
+
+        function fillGuildSelects(s) {
+            const cats = (s.categories || []).map(c => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+            const parentSel = document.getElementById('sv-ch-parent');
+            const prevParent = parentSel.value;
+            parentSel.innerHTML = '<option value="">— none —</option>' + cats;
+            if (prevParent) parentSel.value = prevParent;
+
+            const all = [...(s.categories || []).flatMap(c => c.channels), ...(s.uncategorized || [])];
+            const textish = all.filter(c => c.type === 'text' || c.type === 'announcement')
+                .map(c => `<option value="${escapeAttr(c.id)}">#${escapeHtml(c.name)}</option>`).join('');
+            const voice = all.filter(c => c.type === 'voice')
+                .map(c => `<option value="${escapeAttr(c.id)}">🔊 ${escapeHtml(c.name)}</option>`).join('');
+            const sendSel = document.getElementById('sv-send-channel');
+            const prevSend = sendSel.value;
+            sendSel.innerHTML = textish || '<option value="">No text channels</option>';
+            if (prevSend) sendSel.value = prevSend;
+            if (sendSel.selectedIndex === -1) sendSel.selectedIndex = 0;
+            const evSel = document.getElementById('sv-ev-channel');
+            const prevEv = evSel.value;
+            evSel.innerHTML = '<option value="">— or location →</option>' + voice;
+            if (prevEv) evSel.value = prevEv;
+            if (evSel.selectedIndex === -1) evSel.selectedIndex = 0;
+        }
+
+        async function createGuildChannel() {
+            const name = document.getElementById('sv-ch-name').value.trim();
+            if (!name) { showResult('sv-ch-result', 'error', 'Give it a name.'); return; }
+            const type = document.getElementById('sv-ch-type').value;
+            const body = { name, type };
+            if (type !== 'category') {
+                const parent = document.getElementById('sv-ch-parent').value;
+                if (parent) body.parent_id = parent;
+                const topic = document.getElementById('sv-ch-topic').value.trim();
+                if (topic) body.topic = topic;
+            }
+            try {
+                await connApi('/api/discord/guild/channels', { method: 'POST', body: JSON.stringify(body) });
+                document.getElementById('sv-ch-name').value = '';
+                document.getElementById('sv-ch-topic').value = '';
+                showResult('sv-ch-result', 'success', `Created ${type} "${name}" — live on Discord now.`);
+                loadGuild();
+            } catch (err) {
+                if (err.message !== 'unauthorized') showResult('sv-ch-result', 'error', err.message);
+            }
+        }
+
+        async function deleteGuildChannel(id, label) {
+            if (!confirm(`Delete "${label}" from Discord? This is permanent — messages in it are gone.`)) return;
+            try {
+                await connApi('/api/discord/guild/channels/' + encodeURIComponent(id), { method: 'DELETE' });
+                loadGuild();
+            } catch (err) {
+                if (err.message !== 'unauthorized') alert('Delete failed: ' + err.message);
+            }
+        }
+
+        async function createGuildEvent() {
+            const name = document.getElementById('sv-ev-name').value.trim();
+            const start = document.getElementById('sv-ev-start').value;
+            if (!name) { showResult('sv-ev-result', 'error', 'Give the event a name.'); return; }
+            if (!start) { showResult('sv-ev-result', 'error', 'Pick a start time.'); return; }
+            const body = { name, start_time: new Date(start).toISOString() };
+            const channel = document.getElementById('sv-ev-channel').value;
+            const location = document.getElementById('sv-ev-location').value.trim();
+            if (channel) body.channel_id = channel;
+            else if (location) body.location = location;
+            else { showResult('sv-ev-result', 'error', 'Pick a voice channel or type a location.'); return; }
+            const desc = document.getElementById('sv-ev-desc').value.trim();
+            if (desc) body.description = desc;
+            try {
+                await connApi('/api/discord/guild/events', { method: 'POST', body: JSON.stringify(body) });
+                document.getElementById('sv-ev-name').value = '';
+                document.getElementById('sv-ev-desc').value = '';
+                showResult('sv-ev-result', 'success', `Event "${name}" is on the server.`);
+            } catch (err) {
+                if (err.message !== 'unauthorized') showResult('sv-ev-result', 'error', err.message);
+            }
+        }
+
+        async function botSend() {
+            const channel_id = document.getElementById('sv-send-channel').value;
+            const content = document.getElementById('sv-send-content').value.trim();
+            if (!channel_id) { showResult('sv-send-result', 'error', 'Pick a channel.'); return; }
+            if (!content) { showResult('sv-send-result', 'error', 'Write the message.'); return; }
+            const btn = document.getElementById('sv-send-btn');
+            btn.disabled = true; btn.textContent = 'Sending…';
+            try {
+                await connApi('/api/discord/send', { method: 'POST', body: JSON.stringify({ channel_id, content }) });
+                document.getElementById('sv-send-content').value = '';
+                showResult('sv-send-result', 'success', 'Sent.');
+            } catch (err) {
+                if (err.message !== 'unauthorized') showResult('sv-send-result', 'error', err.message);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Send';
             }
         }
 
