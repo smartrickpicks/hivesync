@@ -1028,12 +1028,17 @@ app.get('/api/discord/status', async (req, res) => {
       pool.query('SELECT COUNT(*)::int AS n FROM communities'),
       pool.query(`SELECT COUNT(*)::int AS n, MAX(created_at) AS last FROM messages WHERE platform = 'discord'`),
     ]);
+    const cfg = await getDiscordConfig();
     res.json({
       success: true,
       bot,
       env: {
         bot_token_set: Boolean(process.env.DISCORD_BOT_TOKEN),
         webhook_url_set: Boolean(process.env.DISCORD_WEBHOOK_URL),
+      },
+      setup: {
+        token_set: Boolean(cfg && cfg.bot_token),
+        guild_id: (cfg && cfg.guild_id) || null,
       },
       communities: commResult.rows[0].n,
       discord_messages: msgResult.rows[0].n,
@@ -1050,92 +1055,244 @@ app.get('/api/discord/status', async (req, res) => {
 // POST /api/discord/webhook/:api_key — Discord webhook receiver
 // ──────────────────────────────────────────────
 
+// Shared ingest: validate → classify → store → count. Used by BOTH the HTTP
+// webhook route (legacy/external callers) and the in-process gateway bot path.
+// Throws { status: 400 } errors for caller-shaped responses.
+async function ingestDiscordMessage(community, payload) {
+  const content = payload.content;
+  const authorName = payload.author?.username || payload.author?.global_name || payload.author_name || 'Unknown';
+  const authorId = payload.author?.id || payload.author_id || null;
+  const channelName = payload.channel_name || payload.channel_id || null;
+  const externalId = payload.id || payload.message_id || null;
+  const timestamp = payload.timestamp || null;
+
+  if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    const err = new Error('content is required and must be a non-empty string');
+    err.status = 400; throw err;
+  }
+  if (content.length > 10000) {
+    const err = new Error('content must be under 10,000 characters');
+    err.status = 400; throw err;
+  }
+
+  const classification = await classifyMessage(content, authorName, channelName);
+
+  const msgResult = await pool.query(
+    `INSERT INTO messages
+      (external_id, platform, channel, author_name, author_id, content,
+       intent, sentiment, confidence, ai_response, response_status, metadata,
+       community_id, processed_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
+     RETURNING *`,
+    [
+      externalId,
+      'discord',
+      channelName,
+      authorName,
+      authorId,
+      content.trim(),
+      classification.intent,
+      classification.sentiment,
+      classification.confidence,
+      classification.response,
+      classification.intent === 'spam' ? 'rejected' : 'suggested',
+      JSON.stringify({
+        reasoning: classification.reasoning,
+        guild_id: community.guild_id,
+        discord_timestamp: timestamp,
+      }),
+      community.id,
+    ]
+  );
+
+  const message = msgResult.rows[0];
+  await pool.query('UPDATE communities SET message_count = message_count + 1 WHERE id = $1', [community.id]);
+  console.log(`[Discord] ${community.name} | msg ${message.id} | ${classification.intent} (${classification.confidence}) | #${channelName || 'unknown'}`);
+  return { message, classification };
+}
+
+// Find-or-create the community row for a guild — this is what makes setup
+// "guild ID in, working feed out": no manual registration call required.
+async function communityForGuild(guildId, guildName) {
+  const found = await pool.query('SELECT id, guild_id, name FROM communities WHERE guild_id = $1 ORDER BY id LIMIT 1', [guildId]);
+  if (found.rows.length) return found.rows[0];
+  const apiKey = crypto.randomBytes(32).toString('hex');
+  try {
+    const created = await pool.query(
+      `INSERT INTO communities (guild_id, name, api_key) VALUES ($1, $2, $3) RETURNING id, guild_id, name`,
+      [guildId, (guildName || `guild ${guildId}`).slice(0, 255), apiKey]
+    );
+    console.log(`[Community] Auto-registered "${created.rows[0].name}" (guild: ${guildId})`);
+    return created.rows[0];
+  } catch (_) {
+    // unique(guild_id) race — someone else inserted first; use theirs
+    const again = await pool.query('SELECT id, guild_id, name FROM communities WHERE guild_id = $1 ORDER BY id LIMIT 1', [guildId]);
+    return again.rows[0];
+  }
+}
+
+// In-process ingest for the gateway bot (no HTTP round-trip, no webhook URL).
+// A configured guild_id acts as a filter; unset = ingest every guild the bot
+// is in, each auto-registered as its own community.
+async function botIngest(payload) {
+  try {
+    if (!payload || !payload.guild_id) return; // DMs etc. — not community traffic
+    const cfg = await getDiscordConfig();
+    if (cfg && cfg.guild_id && cfg.guild_id !== payload.guild_id) return;
+    const community = await communityForGuild(payload.guild_id, payload.guild_name);
+    if (community) await ingestDiscordMessage(community, payload);
+  } catch (err) {
+    if (err.status !== 400) console.error('[Discord ingest]', err.message);
+  }
+}
+
+// ──────────────────────────────────────────────
+// Discord setup — dashboard-driven wiring (no env vars, no curl)
+// The Setup tab stores the bot token + guild here and the server boots the
+// gateway itself. Token is WRITE-ONLY: masked hint on reads, never logged.
+// All routes gated by ADMIN_KEY (same header contract as /connectors/*).
+// ──────────────────────────────────────────────
+
+function adminSafeEq(a, b) {
+  if (!a || !b) return false;
+  const ab = Buffer.from(String(a)), bb = Buffer.from(String(b));
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+}
+function adminAuth(req, res, next) {
+  const k = (req.headers.authorization || '').replace(/^Bearer\s+/i, '') || req.headers['x-admin-key'];
+  if (!adminSafeEq(k, process.env.ADMIN_KEY)) return res.status(401).json({ error: 'unauthorized' });
+  next();
+}
+
+let discordConfigEnsured = false;
+async function ensureDiscordConfigTable() {
+  if (discordConfigEnsured) return;
+  await pool.query(`
+    create table if not exists discord_config (
+      id             int primary key default 1 check (id = 1),
+      bot_token      text,
+      application_id text,
+      guild_id       text,
+      updated_at     timestamptz not null default now()
+    )`);
+  discordConfigEnsured = true;
+}
+
+async function getDiscordConfig() {
+  try {
+    await ensureDiscordConfigTable();
+    const r = await pool.query('SELECT bot_token, application_id, guild_id, updated_at FROM discord_config WHERE id = 1');
+    return r.rows[0] || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+// Read-only View Channels (1024) + Read Message History (65536) — tracking
+// needs nothing more; the publisher side uses webhooks, not bot permissions.
+const INVITE_PERMISSIONS = 66560;
+
+app.get('/api/discord/setup', adminAuth, async (req, res) => {
+  try {
+    const cfg = (await getDiscordConfig()) || {};
+    const bot = require('./bot').status();
+    const appId = cfg.application_id || null;
+    res.json({
+      success: true,
+      config: {
+        application_id: appId,
+        guild_id: cfg.guild_id || null,
+        token_set: Boolean(cfg.bot_token || process.env.DISCORD_BOT_TOKEN),
+        token_hint: cfg.bot_token ? '••••' + cfg.bot_token.slice(-4) : (process.env.DISCORD_BOT_TOKEN ? 'from env' : null),
+        updated_at: cfg.updated_at || null,
+      },
+      bot,
+      invite_url: appId
+        ? `https://discord.com/oauth2/authorize?client_id=${encodeURIComponent(appId)}&scope=bot&permissions=${INVITE_PERMISSIONS}`
+        : null,
+      portal: {
+        application: appId ? `https://discord.com/developers/applications/${encodeURIComponent(appId)}` : 'https://discord.com/developers/applications',
+        bot_page: appId ? `https://discord.com/developers/applications/${encodeURIComponent(appId)}/bot` : 'https://discord.com/developers/applications',
+        required_intents: ['MESSAGE CONTENT INTENT', 'SERVER MEMBERS INTENT'],
+      },
+    });
+  } catch (err) {
+    console.error('[GET /api/discord/setup]', err.message);
+    res.status(500).json({ success: false, message: 'setup read failed' });
+  }
+});
+
+app.post('/api/discord/setup', adminAuth, async (req, res) => {
+  try {
+    await ensureDiscordConfigTable();
+    const body = req.body || {};
+
+    // Field semantics: undefined = keep stored value, '' = clear, value = set.
+    const parseId = (raw, label) => {
+      if (typeof raw !== 'string') return { keep: true };
+      const v = raw.trim();
+      if (v === '') return { value: null };
+      if (!/^\d{15,21}$/.test(v)) return { error: `${label} must be the numeric ID from Discord` };
+      return { value: v };
+    };
+    const appId = parseId(body.application_id, 'application_id');
+    const guildId = parseId(body.guild_id, 'guild_id');
+    if (appId.error) return res.status(400).json({ success: false, message: appId.error });
+    if (guildId.error) return res.status(400).json({ success: false, message: guildId.error });
+
+    const token = typeof body.bot_token === 'string' ? body.bot_token.trim() : '';
+    if (token && (token.length < 50 || /\s/.test(token))) {
+      return res.status(400).json({ success: false, message: 'that does not look like a bot token — copy it from Bot → Reset Token' });
+    }
+
+    const existing = (await getDiscordConfig()) || {};
+    const finalToken = token || existing.bot_token || null;          // write-only: empty keeps stored
+    const finalApp = appId.keep ? (existing.application_id || null) : appId.value;
+    const finalGuild = guildId.keep ? (existing.guild_id || null) : guildId.value;
+
+    await pool.query(
+      `INSERT INTO discord_config (id, bot_token, application_id, guild_id, updated_at)
+       VALUES (1, $1, $2, $3, now())
+       ON CONFLICT (id) DO UPDATE SET bot_token = $1, application_id = $2, guild_id = $3, updated_at = now()`,
+      [finalToken, finalApp, finalGuild]
+    );
+
+    const bot = require('./bot');
+    if (finalToken) await bot.connect(finalToken, 'setup');
+    res.json({ success: true, bot: bot.status(), token_set: Boolean(finalToken) });
+  } catch (err) {
+    console.error('[POST /api/discord/setup]', err.message);
+    res.status(500).json({ success: false, message: 'setup save failed' });
+  }
+});
+
+app.post('/api/discord/setup/disconnect', adminAuth, async (req, res) => {
+  try {
+    const bot = require('./bot');
+    await bot.disconnect();
+    if (req.body && req.body.forget_token) {
+      await ensureDiscordConfigTable();
+      await pool.query('UPDATE discord_config SET bot_token = NULL, updated_at = now() WHERE id = 1');
+    }
+    res.json({ success: true, bot: bot.status() });
+  } catch (err) {
+    console.error('[POST /api/discord/setup/disconnect]', err.message);
+    res.status(500).json({ success: false, message: 'disconnect failed' });
+  }
+});
+
 app.post('/api/discord/webhook/:api_key', async (req, res) => {
   try {
-    const { api_key } = req.params;
-
-    // Validate API key and look up community
     const communityResult = await pool.query(
       'SELECT id, guild_id, name FROM communities WHERE api_key = $1',
-      [api_key]
+      [req.params.api_key]
     );
-
     if (communityResult.rows.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid API key'
-      });
+      return res.status(401).json({ success: false, message: 'Invalid API key' });
     }
-
     const community = communityResult.rows[0];
 
-    // Parse Discord webhook payload
-    // Discord sends: author (username, id, discriminator), content, channel_id, timestamp, etc.
-    const payload = req.body;
-
-    // Extract fields from Discord message format
-    const content = payload.content;
-    const authorName = payload.author?.username || payload.author?.global_name || payload.author_name || 'Unknown';
-    const authorId = payload.author?.id || payload.author_id || null;
-    const channelName = payload.channel_name || payload.channel_id || null;
-    const externalId = payload.id || payload.message_id || null;
-    const timestamp = payload.timestamp || null;
-
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'content is required and must be a non-empty string'
-      });
-    }
-
-    if (content.length > 10000) {
-      return res.status(400).json({
-        success: false,
-        message: 'content must be under 10,000 characters'
-      });
-    }
-
-    // Run through existing AI classification pipeline
-    const classification = await classifyMessage(content, authorName, channelName);
-
-    // Store in messages table linked to community
-    const msgResult = await pool.query(
-      `INSERT INTO messages
-        (external_id, platform, channel, author_name, author_id, content,
-         intent, sentiment, confidence, ai_response, response_status, metadata,
-         community_id, processed_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
-       RETURNING *`,
-      [
-        externalId,
-        'discord',
-        channelName,
-        authorName,
-        authorId,
-        content.trim(),
-        classification.intent,
-        classification.sentiment,
-        classification.confidence,
-        classification.response,
-        classification.intent === 'spam' ? 'rejected' : 'suggested',
-        JSON.stringify({
-          reasoning: classification.reasoning,
-          guild_id: community.guild_id,
-          discord_timestamp: timestamp,
-        }),
-        community.id,
-      ]
-    );
-
-    const message = msgResult.rows[0];
-
-    // Increment community message_count
-    await pool.query(
-      'UPDATE communities SET message_count = message_count + 1 WHERE id = $1',
-      [community.id]
-    );
-
-    console.log(`[Discord] ${community.name} | msg ${message.id} | ${classification.intent} (${classification.confidence}) | #${channelName || 'unknown'}`);
+    const { message, classification } = await ingestDiscordMessage(community, req.body || {});
 
     res.status(201).json({
       success: true,
@@ -1160,6 +1317,7 @@ app.post('/api/discord/webhook/:api_key', async (req, res) => {
       },
     });
   } catch (err) {
+    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
     console.error('[POST /api/discord/webhook]', err.message);
     res.status(500).json({ success: false, message: 'Failed to process Discord message' });
   }
@@ -1261,5 +1419,14 @@ app.listen(port, () => {
   console.log(`[Hivesync] POST /api/communities — Register Discord server`);
   console.log(`[Hivesync] GET  /api/communities — List communities`);
   console.log(`[Hivesync] POST /api/discord/webhook/:api_key — Discord webhook`);
-  require('./bot').start();
+  // Discord gateway: prefer the dashboard-stored Setup config (no env vars,
+  // no redeploys); fall back to DISCORD_BOT_TOKEN env for legacy installs.
+  const bot = require('./bot');
+  bot.configure({ ingest: botIngest });
+  getDiscordConfig()
+    .then((cfg) => {
+      if (cfg && cfg.bot_token) return bot.connect(cfg.bot_token, 'setup');
+      bot.start();
+    })
+    .catch(() => bot.start());
 });

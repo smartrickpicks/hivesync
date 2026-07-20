@@ -578,6 +578,9 @@
             <!-- Community Ops — the /connectors/* control plane (key-gated) -->
             <div class="sidebar-section-label">Community Ops</div>
             <nav class="sidebar-nav">
+                <a class="sidebar-item" id="nav-setup" href="/dashboard" onclick="switchTab('setup', this); return false;">
+                    <span class="sidebar-item-dot" style="background:var(--build)"></span>Setup
+                </a>
                 <a class="sidebar-item" id="nav-channels" href="/dashboard" onclick="switchTab('channels', this); return false;">
                     <span class="sidebar-item-dot" style="background:var(--accent)"></span>Channels
                 </a>
@@ -801,6 +804,86 @@
                     </div>
                 </div>
             </div><!-- /tab-lock -->
+
+            <!-- ═══ Setup — one-for-one with the Discord developer portal ═══ -->
+            <div id="tab-setup" class="tab-content hidden">
+                <div class="page-header">
+                    <div>
+                        <h1>Setup</h1>
+                        <p class="subtitle">One-for-one with the Discord developer portal — token + guild ID and you're live</p>
+                    </div>
+                </div>
+                <div class="main-grid">
+                    <div>
+                        <div class="section-card" style="margin-bottom:20px;">
+                            <div class="section-header">
+                                <h3>1 · Application</h3>
+                                <a id="setup-portal-link" class="filter-btn" style="text-decoration:none;" href="https://discord.com/developers/applications" target="_blank" rel="noopener">Open developer portal &#8599;</a>
+                            </div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="su-appid">Application ID</label>
+                                    <input id="su-appid" placeholder="1234567890123456789" autocomplete="off">
+                                </div>
+                                <p class="lock-note">Portal &rarr; your app &rarr; General Information &rarr; Application ID &rarr; copy.
+                                This builds your invite link and the deep-links on this page.</p>
+                            </div>
+                        </div>
+                        <div class="section-card" style="margin-bottom:20px;">
+                            <div class="section-header">
+                                <h3>2 · Bot token + intents</h3>
+                                <a id="setup-bot-link" class="filter-btn" style="text-decoration:none;" href="https://discord.com/developers/applications" target="_blank" rel="noopener">Open Bot page &#8599;</a>
+                            </div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="su-token">Bot token <span id="su-token-state" style="text-transform:none;letter-spacing:0;color:var(--ship);"></span></label>
+                                    <input type="password" id="su-token" placeholder="Paste from Bot &rarr; Reset Token" autocomplete="off">
+                                </div>
+                                <p class="lock-note">Write-only — stored server-side, never shown again. On the SAME Bot page, flip both
+                                privileged switches (Discord has no API for these two — it has to be you):
+                                <strong>MESSAGE CONTENT INTENT</strong> and <strong>SERVER MEMBERS INTENT</strong>.
+                                Skipped = the bot can't log in ("disallowed intents"). Reuse the token of the bot already
+                                running your server — one app can do slash commands and this tracking at once.</p>
+                            </div>
+                        </div>
+                        <div class="section-card" style="margin-bottom:20px;">
+                            <div class="section-header"><h3>3 · Invite the bot</h3></div>
+                            <div class="conn-form">
+                                <a id="su-invite" class="send-btn" style="display:inline-flex;width:auto;text-decoration:none;pointer-events:none;opacity:0.5;" href="#" target="_blank" rel="noopener">Invite to your server &#8599;</a>
+                                <p class="lock-note">Read-only permissions (View Channels + Read Message History). Lights up once the
+                                Application ID is saved. Skip if the bot is already in your server.</p>
+                            </div>
+                        </div>
+                        <div class="section-card">
+                            <div class="section-header"><h3>4 · Guild</h3></div>
+                            <div class="conn-form">
+                                <div class="field">
+                                    <label for="su-guild">Server (guild) ID</label>
+                                    <input id="su-guild" placeholder="Right-click your server &rarr; Copy Server ID" autocomplete="off">
+                                </div>
+                                <div id="su-guilds"></div>
+                                <p class="lock-note">Once connected, the bot's servers list here — tap one to fill this in.
+                                Empty = track every server the bot is in.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="sidebar-stack">
+                        <div class="section-card">
+                            <div class="section-header"><h3>Save &amp; Connect</h3></div>
+                            <div class="conn-form">
+                                <button class="send-btn" id="su-save" onclick="saveSetup()">Save &amp; Connect</button>
+                                <div class="test-result" id="su-result"></div>
+                                <p class="lock-note">Saving boots the bot immediately — no redeploy, no env vars. Messages, joins,
+                                and role changes start landing on the Messages tab within seconds.</p>
+                            </div>
+                        </div>
+                        <div class="section-card">
+                            <div class="section-header"><h3>Connection</h3></div>
+                            <div id="su-conn" class="conn-form" style="font-size:0.85rem;color:var(--text2);line-height:1.6;">Loading&hellip;</div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /tab-setup -->
 
             <!-- ═══ Channels (contract §2) ═══ -->
             <div id="tab-channels" class="tab-content hidden">
@@ -1212,11 +1295,8 @@
                 } else if (bot.status === 'disabled') {
                     el.className = 'conn-note live-err';
                     el.innerHTML = `<span><strong>Not connected to Discord.</strong>
-                        Missing on the server: <strong>${(bot.missing || []).map(escapeHtml).join(' + ') || 'bot env vars'}</strong>.
-                        Set them in Render &rarr; Environment and redeploy. The bot token comes from the Discord developer
-                        portal (with Message Content + Server Members intents enabled); the webhook URL is
-                        <span style="font-family:var(--font-mono);">https://&lt;this-host&gt;/api/discord/webhook/&lt;api_key&gt;</span>
-                        from your registered community.</span>`;
+                        Open <a href="/dashboard" onclick="switchTab('setup', document.getElementById('nav-setup')); return false;" style="color:var(--accent);">Community Ops &rarr; Setup</a>,
+                        paste the bot token + guild ID, hit Save &amp; Connect — live in seconds, no redeploy.</span>`;
                 } else {
                     el.className = 'conn-note live-warn';
                     el.innerHTML = '<span><strong>Bot connecting&hellip;</strong> refresh in a few seconds.</span>';
@@ -1485,6 +1565,7 @@
             showTab(tab, el);
             if (tab === 'waitlist') loadWaitlist();
             else if (tab === 'messages') loadDashboard();
+            else if (tab === 'setup') { setupLoaded = false; loadSetup(); connPollTimer = setInterval(loadSetup, 5000); }
             else if (tab === 'channels') loadChannels();
             else if (tab === 'composer') loadComposer();
             else if (tab === 'sources') { populateChannelSelects(); loadSources(); }
@@ -1545,7 +1626,7 @@
         // header on every call. Never rendered back, never logged.
         // ═══════════════════════════════════════════════════════════════════
 
-        const CONN_TABS = ['channels', 'composer', 'sources', 'scheduled', 'activity', 'otto'];
+        const CONN_TABS = ['setup', 'channels', 'composer', 'sources', 'scheduled', 'activity', 'otto'];
         let connKey = sessionStorage.getItem('hs_admin_key') || '';
         let connState = { channels: [], sources: [], scheduled: [] };
         let pendingConnTab = 'channels';
@@ -1652,6 +1733,112 @@
                 // first option instead of a blank select.
                 if (el.selectedIndex === -1) el.selectedIndex = 0;
             });
+        }
+
+        // ── Setup (Discord wiring — /api/discord/setup, admin-key gated) ──
+        let setupLoaded = false;
+
+        async function loadSetup() {
+            let s;
+            try {
+                s = await connApi('/api/discord/setup');
+            } catch (err) {
+                if (err.message === 'unauthorized') return;
+                showResult('su-result', 'error', 'Could not load setup: ' + err.message);
+                return;
+            }
+            const cfg = s.config || {};
+            const bot = s.bot || {};
+            // Fill inputs only on first load — the 5s poll must not stomp typing.
+            if (!setupLoaded) {
+                if (cfg.application_id) document.getElementById('su-appid').value = cfg.application_id;
+                if (cfg.guild_id) document.getElementById('su-guild').value = cfg.guild_id;
+                setupLoaded = true;
+            }
+            document.getElementById('su-token-state').textContent =
+                cfg.token_set ? `— saved ${cfg.token_hint || ''} (paste again to replace)` : '';
+            const inv = document.getElementById('su-invite');
+            if (s.invite_url) { inv.href = s.invite_url; inv.style.pointerEvents = ''; inv.style.opacity = ''; }
+            else { inv.removeAttribute('href'); inv.style.pointerEvents = 'none'; inv.style.opacity = '0.5'; }
+            const portal = s.portal || {};
+            if (portal.application) document.getElementById('setup-portal-link').href = portal.application;
+            if (portal.bot_page) document.getElementById('setup-bot-link').href = portal.bot_page;
+            renderSetupConn(bot, cfg);
+            renderSetupGuilds(bot);
+        }
+
+        function renderSetupConn(bot, cfg) {
+            const el = document.getElementById('su-conn');
+            const badge = (cls, txt) => `<span class="badge ${cls}">${txt}</span>`;
+            if (bot.status === 'connected') {
+                el.innerHTML = `${badge('on', 'connected')} <strong style="color:var(--text);">${escapeHtml(bot.bot_tag || '')}</strong><br>
+                    ${bot.guilds} server${bot.guilds === 1 ? '' : 's'} · ${bot.messages_seen} msg${bot.messages_seen === 1 ? '' : 's'} · ${bot.joins_seen} join${bot.joins_seen === 1 ? '' : 's'} this session
+                    ${bot.last_event_at ? '<br>last event ' + escapeHtml(timeAgo(bot.last_event_at)) : ''}
+                    <div style="margin-top:10px;"><button class="icon-btn danger" onclick="disconnectBot()">Disconnect</button></div>`;
+            } else if (bot.status === 'error') {
+                el.innerHTML = `${badge('failed', 'error')} ${escapeHtml(bot.last_error || 'unknown error')}<br>
+                    <span style="color:var(--text3);">"disallowed intents" &rarr; flip the two switches on the Bot page (step 2), then Save &amp; Connect again.</span>`;
+            } else if (bot.status === 'connecting') {
+                el.innerHTML = `${badge('claimed', 'connecting')} waiting on the gateway&hellip;`;
+            } else {
+                el.innerHTML = `${badge('off', 'not connected')} ${cfg.token_set ? 'token saved — hit Save &amp; Connect' : 'paste the bot token (step 2)'}`;
+            }
+        }
+
+        function renderSetupGuilds(bot) {
+            const wrap = document.getElementById('su-guilds');
+            const list = (bot && bot.guild_list) || [];
+            if (!list.length) { wrap.innerHTML = ''; return; }
+            wrap.innerHTML = '<div class="conn-form" style="padding:0 0 6px;"><label style="font-family:var(--font-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);">The bot is in</label></div>'
+                + list.map((g, i) => `
+                <div class="job-item" style="padding:10px 12px;" onclick="pickGuild(${i})">
+                    <span style="color:var(--text);">${escapeHtml(g.name)}</span>
+                    <span class="mono" style="color:var(--text3);font-size:0.72rem;"> · ${escapeHtml(g.id)}</span>
+                </div>`).join('');
+            setupGuildList = list;
+        }
+        let setupGuildList = [];
+        function pickGuild(i) {
+            const g = setupGuildList[i];
+            if (g) document.getElementById('su-guild').value = g.id;
+        }
+
+        async function saveSetup() {
+            const btn = document.getElementById('su-save');
+            btn.disabled = true; btn.textContent = 'Connecting…';
+            try {
+                const body = {
+                    application_id: document.getElementById('su-appid').value,
+                    guild_id: document.getElementById('su-guild').value,
+                };
+                const token = document.getElementById('su-token').value.trim();
+                if (token) body.bot_token = token;
+                const out = await connApi('/api/discord/setup', { method: 'POST', body: JSON.stringify(body) });
+                document.getElementById('su-token').value = ''; // write-only: clear from the DOM
+                const bs = (out.bot && out.bot.status) || 'unknown';
+                if (bs === 'connected') showResult('su-result', 'success', 'Connected as ' + ((out.bot && out.bot.bot_tag) || 'bot') + ' — you are live.');
+                else if (bs === 'connecting') showResult('su-result', 'success', 'Saved — connecting, watch the Connection card.');
+                else if (bs === 'error') showResult('su-result', 'error', 'Saved, but login failed: ' + ((out.bot && out.bot.last_error) || 'unknown') + '. Check the intents on the Bot page.');
+                else showResult('su-result', 'success', 'Saved. Paste the bot token to connect.');
+                setupLoaded = false;
+                loadSetup();
+            } catch (err) {
+                if (err.message !== 'unauthorized') {
+                    showResult('su-result', 'error', 'Save failed: ' + err.message);
+                }
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save & Connect';
+            }
+        }
+
+        async function disconnectBot() {
+            if (!confirm('Disconnect the bot? Tracking stops until you reconnect.')) return;
+            try {
+                await connApi('/api/discord/setup/disconnect', { method: 'POST', body: JSON.stringify({}) });
+                loadSetup();
+            } catch (err) {
+                if (err.message !== 'unauthorized') alert('Disconnect failed: ' + err.message);
+            }
         }
 
         // ── Channels (§2) ──
