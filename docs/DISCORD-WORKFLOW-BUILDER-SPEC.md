@@ -225,6 +225,21 @@ Zac's call ("keep `/link` on the gate") therefore resolves one of two ways:
 - **Do NOT ship C-as-written** (it ports `/link` onto the gateway) — that contradicts
   "keep `/link` on the gate."
 
+**DECISION (Zac, 2026-07-20): A1a — split `/link` into its own Discord app.** Setup
+(portal + one env swap; the gate CODE is unchanged — it's already the edge endpoint):
+  1. Dev Portal → New Application ("Airlock Link"). Copy its **Public Key** and, if it
+     needs a bot presence to be invited, its bot token.
+  2. Point the new app's **Interactions Endpoint URL** at the gate's existing Vercel URL
+     (the `airlock-discord-gate` deployment). Set the gate's `DISCORD_PUBLIC_KEY` env on
+     Vercel to the **new app's** public key, redeploy the gate.
+  3. Register `/link` (and `beam_start` if it belongs with identity) to the NEW app's
+     guild commands; DELETE `/link` from the OLD (hivesync-bot) app's command set.
+  4. Invite the new "Airlock Link" app to The Brain Brigade guild.
+  5. Now the OLD app owns only workflow/community commands → **clear its Interactions
+     Endpoint URL** (Option C cutover) so its interactions flow to hivesync's gateway.
+  Result: `/link` is 100% on Vercel edge (zero Render dependency); everything else is on
+  hivesync's gateway. Rollback for the OLD app = re-paste its endpoint URL (gate relay).
+
 **3. NEW SCOPE — dashboard slash-command registry (Zac, folded into WB-1).**
 A "Commands" surface in the dashboard registers/edits/deletes the guild's slash commands
 via the Discord API, so command definitions and their logic are editable from the
