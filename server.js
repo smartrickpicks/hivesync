@@ -1623,23 +1623,28 @@ app.post('/api/picks/consume', async (req, res) => {
 // tags; this only routes + dedups. HOT → news-hot, WARM → news-warm, both → news
 // (whichever tiers are wired). News is CONTEXT, never a pick — the embed footer
 // says so, and it never touches a grade.
+// Human-facing labels — no internal scores/jargon reach members (glass box stays ours).
+const FACTOR_LABEL = { injury: 'Injury', lineup: 'Lineup', line: 'Betting line',
+  weather: 'Weather', suspension: 'Discipline', roster: 'Roster move', general: 'News' };
 function newsEmbed(item) {
   const s = item.sentiment || {};
   const mo = item.mo || {};
-  const facs = Array.isArray(item.factors) ? item.factors.join(' · ') : '';
-  const sentLine = s.cue ? `${s.tag}${s.team ? ` · ${s.team}` : ''} (cue: ${s.cue})` : 'neutral';
+  const facs = (Array.isArray(item.factors) && item.factors.length ? item.factors : ['general'])
+    .map((f) => FACTOR_LABEL[f] || f).filter((v, i, a) => a.indexOf(v) === i).join(' · ');
+  const fields = [];
+  if (mo.topDoc) fields.push({ name: 'Game', value: mo.topDoc, inline: true });
+  fields.push({ name: 'Angle', value: facs, inline: true });
+  if (s.cue && s.tag && s.tag !== 'neutral') {
+    const dir = s.tag === 'negative' ? '🔻' : '🔺';
+    fields.push({ name: 'Watch', value: `${dir} ${s.team ? s.team + ' — ' : ''}${s.cue}`, inline: true });
+  }
   return {
     title: `${item.relevance === 'HOT' ? '🔴' : '🟡'} ${String(item.title || '').slice(0, 240)}`,
     url: item.url || undefined,
-    description: (item.desc ? String(item.desc).slice(0, 300) : '')
-      + (mo.topDoc ? `\n\n**Game:** ${mo.topDoc}` : ''),
+    description: item.desc ? String(item.desc).slice(0, 300) : '',
     color: NEWS_COLORS[item.relevance] || 0x7c5cfc,
-    fields: [
-      { name: 'Relevance', value: `${item.relevance} · mo ${item.score != null ? item.score : '—'}`, inline: true },
-      { name: 'Factors', value: facs || 'general', inline: true },
-      { name: 'Read', value: sentLine, inline: true },
-    ],
-    footer: { text: `${item.feed || 'rss'} · context only, not a pick · attributed report · 21+` },
+    fields,
+    footer: { text: `${item.feed || 'rss'} · context, not a pick · 21+` },
   };
 }
 
@@ -1671,8 +1676,8 @@ async function pollNews() {
     for (const item of items) {
       const rel = String(item.relevance || '').toUpperCase();
       if (rel !== 'HOT' && rel !== 'WARM') continue;
-      // HOT → news-hot + news ; WARM → news-warm + news
-      const targets = [rel === 'HOT' ? 'news-hot' : 'news-warm', 'news'];
+      // Curated: `news` gets HOT only (the firehose lives on news-warm if wired).
+      const targets = rel === 'HOT' ? ['news-hot', 'news'] : ['news-warm'];
       for (const tier of targets) {
         if (!wired.has(tier)) continue;
         const dedupKey = `news:${day}:${item.sha}:${tier}`;
