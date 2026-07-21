@@ -1504,6 +1504,14 @@ const PICKS_FEED_URL = process.env.PICKS_FEED_URL
 const GRADE_TIERS = ['a', 'b', 'c', 'd', 'f'];
 const GRADE_COLORS = { A: 0x1fbe6b, B: 0x00d1ff, C: 0xeab308, D: 0xf97316, F: 0xef4444 };
 
+// News feed produced by the Pi pipeline (news_pipeline.py): RSS → mo gate → tags.
+// Only mo-relevant items (HOT/WARM) are in it; each carries relevance/factor/
+// sentiment tags. Routed to news channels, dedup'd per (item, tier, slate-day).
+const NEWS_FEED_URL = process.env.NEWS_FEED_URL
+  || 'https://raw.githubusercontent.com/smartrickpicks/fixer-data/main/news_data.json';
+const NEWS_TIERS = ['news-hot', 'news-warm', 'news'];
+const NEWS_COLORS = { HOT: 0xef4444, WARM: 0xeab308 };
+
 function pickEmbed(g, bucket) {
   const a = g.asmt || {};
   const vs = a.value_side || {};
@@ -1606,6 +1614,103 @@ app.post('/api/picks/consume', async (req, res) => {
     res.json(out);
   } catch (e) {
     console.error('[picks/consume]', e.message);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// ── News Router: mo-gated slate news → news channels ──
+// Mirror of the picks router. The Pi pipeline pre-filters (mo PPMI gate) and
+// tags; this only routes + dedups. HOT → news-hot, WARM → news-warm, both → news
+// (whichever tiers are wired). News is CONTEXT, never a pick — the embed footer
+// says so, and it never touches a grade.
+function newsEmbed(item) {
+  const s = item.sentiment || {};
+  const mo = item.mo || {};
+  const facs = Array.isArray(item.factors) ? item.factors.join(' · ') : '';
+  const sentLine = s.cue ? `${s.tag}${s.team ? ` · ${s.team}` : ''} (cue: ${s.cue})` : 'neutral';
+  return {
+    title: `${item.relevance === 'HOT' ? '🔴' : '🟡'} ${String(item.title || '').slice(0, 240)}`,
+    url: item.url || undefined,
+    description: (item.desc ? String(item.desc).slice(0, 300) : '')
+      + (mo.topDoc ? `\n\n**Game:** ${mo.topDoc}` : ''),
+    color: NEWS_COLORS[item.relevance] || 0x7c5cfc,
+    fields: [
+      { name: 'Relevance', value: `${item.relevance} · mo ${item.score != null ? item.score : '—'}`, inline: true },
+      { name: 'Factors', value: facs || 'general', inline: true },
+      { name: 'Read', value: sentLine, inline: true },
+    ],
+    footer: { text: `${item.feed || 'rss'} · context only, not a pick · attributed report · 21+` },
+  };
+}
+
+let newsRouterBusy = false;
+async function pollNews() {
+  if (newsRouterBusy) return { ok: false, busy: true };
+  newsRouterBusy = true;
+  let posted = 0, skipped = 0;
+  const byTier = {};
+  try {
+    const { rows: routes } = await pool.query(
+      `select tier from discord_channels where guild_id = 'default' and enabled and tier = any($1)`,
+      [NEWS_TIERS]
+    );
+    if (!routes.length) return { ok: true, idle: 'no news channels wired', posted, skipped };
+    const wired = new Set(routes.map((r) => r.tier));
+
+    let feed;
+    try {
+      const r = await fetch(`${NEWS_FEED_URL}?t=${Date.now()}`, { cache: 'no-store' });
+      feed = await r.json();
+    } catch (_) {
+      return { ok: false, error: 'news feed fetch failed', posted, skipped };
+    }
+
+    const { sendToChannel } = require('./connectors');
+    const day = feed.slate_date || (feed.generated_at || '').slice(0, 10) || '';
+    const items = Array.isArray(feed.items) ? feed.items : [];
+    for (const item of items) {
+      const rel = String(item.relevance || '').toUpperCase();
+      if (rel !== 'HOT' && rel !== 'WARM') continue;
+      // HOT → news-hot + news ; WARM → news-warm + news
+      const targets = [rel === 'HOT' ? 'news-hot' : 'news-warm', 'news'];
+      for (const tier of targets) {
+        if (!wired.has(tier)) continue;
+        const dedupKey = `news:${day}:${item.sha}:${tier}`;
+        const ins = await pool.query(
+          `insert into discord_publish_log (dedup_key, kind, guild_id) values ($1, $2, 'default')
+           on conflict (dedup_key) do nothing returning dedup_key`,
+          [dedupKey, `news-${tier}`]
+        );
+        if (!ins.rows.length) { skipped++; continue; }
+        const out = await sendToChannel(pool, 'default', tier, { embed: newsEmbed(item) }, { logKey: dedupKey, kind: `news-${tier}` });
+        if (!out.ok) {
+          await pool.query(`delete from discord_publish_log where dedup_key = $1`, [dedupKey]);
+          console.error(`[news router] ${tier} send failed:`, out.error);
+        } else {
+          posted++; byTier[tier] = (byTier[tier] || 0) + 1;
+        }
+      }
+    }
+    return { ok: true, candidates: items.length, posted, skipped, byTier };
+  } catch (e) {
+    console.error('[news router]', e.message);
+    return { ok: false, error: e.message, posted, skipped };
+  } finally {
+    newsRouterBusy = false;
+  }
+}
+
+// Pi/cron trigger for the news router (same contract as /api/picks/consume).
+app.post('/api/news/consume', async (req, res) => {
+  const auth = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  if (!process.env.CRON_SECRET || auth !== process.env.CRON_SECRET) {
+    return res.status(401).json({ ok: false, error: 'unauthorized' });
+  }
+  try {
+    const out = await pollNews();
+    res.json(out);
+  } catch (e) {
+    console.error('[news/consume]', e.message);
     res.status(500).json({ ok: false, error: e.message });
   }
 });
