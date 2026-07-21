@@ -1028,11 +1028,16 @@
                             <div class="conn-form">
                                 <div class="field">
                                     <label for="ch-tier">Tier (route key)</label>
-                                    <input id="ch-tier" list="tier-presets" placeholder="top" autocomplete="off">
+                                    <input id="ch-tier" list="tier-presets" placeholder="news, a, b, all…" autocomplete="off">
                                     <datalist id="tier-presets">
-                                        <option value="top"></option><option value="qualified"></option>
-                                        <option value="watch"></option><option value="pass"></option><option value="all"></option>
+                                        <option value="a">picks · grade A</option><option value="b">picks · grade B</option>
+                                        <option value="c">picks · grade C</option><option value="d">picks · grade D</option>
+                                        <option value="f">picks · grade F</option><option value="all">picks · every grade</option>
+                                        <option value="news">news · all mo-gated</option>
+                                        <option value="news-hot">news · HOT only</option>
+                                        <option value="news-warm">news · WARM only</option>
                                     </datalist>
+                                    <p class="lock-note" style="margin-top:4px;">Pick a preset or type any key. Picks route by grade (a–f, all); news routes to news / news-hot / news-warm.</p>
                                 </div>
                                 <div class="field">
                                     <label for="ch-label">Label</label>
